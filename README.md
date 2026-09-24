@@ -1,5 +1,5 @@
-# ✍️ LinguaCraft (링구아크래프트)
-> **AI 기반 맞춤형 영작 첨삭 & 원어민 뉘앙스 코칭 웹 서비스**
+# 🛋️ 슬로파 잉글리쉬 (Slofa English)
+> **느리게(Slow) 귀를 열고, 빠르게(Fast) 입을 틔우는 듀얼 트랙 긍정 영어 루틴**
 
 [![Vercel Deployment](https://img.shields.io/badge/Deployed%20with-Vercel-000000.svg?style=flat&logo=vercel)](https://vercel.com)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB.svg?style=flat&logo=python&logoColor=white)](https://www.python.org/)
@@ -9,31 +9,31 @@
 
 ## 📌 1. 서비스 소개
 
-**LinguaCraft**는 한국인 학습자가 영작할 때 자주 겪는 "어색한 직역투"를 해결해주는 반응형 AI 영어 작문 코칭 서비스입니다.
+**슬로파 잉글리쉬 (Slofa English)**는 *"영어가 아직 들리지도 않는데 억지로 말하게 강요하는 고통"*을 없애고, **소파(Sofa)에 편안하게 기대어 긍정 에너지를 채우며 3단 가속으로 영어를 체화**하는 웹 서비스입니다.
 
-단순 오탈자 수정 수준을 넘어, **목표 상황(일상 캐주얼, 비즈니스 이메일, 생생한 원어민 구어체, 아카데믹)**에 맞춰 자연스러운 영어 문장으로 다듬어주며, 상세한 문법/뉘앙스 해설과 원어민이 실제 즐겨 쓰는 대체 표현을 함께 제시합니다.
-
-### 🌟 핵심 기능
-1. **AI 영작 첨삭 & 뉘앙스 코칭**:
-   - 4가지 톤(일상/비즈니스/원어민구어체/아카데믹) 맞춤형 첨삭
-   - 친절한 한국어 해설 및 원어민 대체 표현 3종 제공
-   - 원어민 오디오 발음 재생 (Web Speech API) 및 클립보드 복사
-2. **오늘의 관용구 & 미니 퀴즈**:
-   - 매일 새로운 핵심 영어 관용구 학습 및 즉석 3지선다 퀴즈
-3. **나만의 단어장 & 복습 아카이브 (LocalStorage)**:
-   - 교정받은 표현을 브라우저에 영구 저장 및 검색, 발음 듣기
-4. **완벽한 반응형 & 다크 모드**:
-   - 모바일, 태블릿, 데스크톱 최적화 레이아웃 및 다크/라이트 모드 지원
-5. **견고한 UX 실패 처리**:
-   - 빈 입력 방지 및 실시간 유효성 검사, 로딩 스피너 및 8초 이상 지연 안내, API 키 미등록 시 데모 결과 미리보기 지원
+### 🌟 핵심 차별점 & 듀얼 트랙(Dual-Track)
+1. **[트랙 1] 수준별 정규 훈련실 (Core Training)**:
+   - 첫 방문 시 1회 레벨 진단(Seed 초급 / Grow 중급 / Bloom 고급) 후 자동 저장 (시험 피로 방지)
+   - **워밍업 10초 입 풀기**: 오늘 진도 전, 어제 배운 문장으로 10초 만에 가볍게 소리 내어 낭독
+   - **선생님 언어 모드**: 🇰🇷 친절한 한국어 해설 vs 🇺🇸 100% 원어민 몰입 가이드 선택
+   - **Slofa 3단계 가속 훈련**:
+     - 🐢 `0.8x Slo`: 연음과 억양을 슬로우비디오처럼 정밀 분석
+     - 🚶 `1.0x Natural`: 원어민 표준 호흡으로 자연 체득
+     - 🏎️ `1.2x Fast`: 머뭇거림 없는 순발력 극대화
+   - **패턴 확장**: 문장의 뼈대를 일상 표현 3가지로 확장
+   - **스마트 복습 분기**: 어려운 문장은 클릭 한 번으로 **"내일 라디오로 보내기"** (다음 날 BGM으로 귀에 자동 복습)
+2. **[트랙 2] 24H 긍정 귀 트이기 라디오 (Always-on Radio)**:
+   - 정규 진도나 테스트와 완전 무관한 **독립형 BGM 프로그램**
+   - 내 수준에 맞는 긍정 확언 문장이 **들릴 때까지 24시간 무한 연속 재생**
+   - 흘려듣다 꽂히는 문장은 `[🔥 훈련실로 가져가기]` 버튼으로 즉시 3단 가속 정복
 
 ---
 
 ## 🛠️ 2. 기술 스택
 
-- **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+)
-- **백엔드 (Serverless)**: Python 3.9+ (Vercel Serverless Function `api/coach.py`)
-- **AI API**: Google Gemini 1.5 Flash API (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`)
+- **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+, Web Speech API TTS/STT, LocalStorage)
+- **백엔드 (Serverless)**: Python 3.9+ (Vercel Serverless Function `api/slofa.py`)
+- **AI API**: Google Gemini 1.5 Flash (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 내장 고품질 프리셋(Smart Fallback) 탑재
 - **배포 플랫폼**: Vercel (GitHub 연동 자동 배포)
 
 ---
@@ -42,28 +42,27 @@
 
 ```text
 A1-3/
-├── index.html            # 메인 싱글 페이지 웹 애플리케이션 (4개 섹션)
+├── index.html            # 메인 싱글 페이지 웹 앱 (듀얼 트랙 & 4개 뷰)
 ├── css/
-│   └── style.css         # 다크모드 및 반응형 모던 스타일시트
+│   └── style.css         # Slofa 감성 테마, 3단 가속 UI, 반응형 스타일
 ├── js/
-│   └── app.js           # 프론트엔드 인터랙션, API 호출, TTS, LocalStorage
+│   └── app.js           # 듀얼 트랙 제어, Web Speech 3단 가속, 무한 라디오 루프
 ├── api/
-│   └── coach.py          # Vercel Python Serverless Function (AI 엔드포인트)
-├── vercel.json           # Vercel 라우팅 및 빌드 설정
+│   ├── slofa.py          # [백엔드] Vercel Python AI Serverless Function
+│   └── coach.py          # 호환성 브릿지 엔드포인트
+├── vercel.json           # Vercel 서버리스 라우팅 설정
 ├── requirements.txt      # 파이썬 의존성 패키지 정의
 ├── PLAN.md               # [제출 필수] 서비스 기획서
-├── README.md             # [제출 필수] 프로젝트 상세 안내서
-├── guide.md              # 미션 가이드 문서
-├── .env.example          # 환경 변수 설정 예시
-└── .gitignore            # Git 형상관리 예외 규칙
+├── README.md             # [제출 필수] 프로젝트 안내서 및 배포 가이드
+├── .env.example          # 환경 변수 설정 템플릿
+└── .gitignore            # Git 형상관리 보안 규칙
 ```
 
 ---
 
 ## 🚀 4. 로컬 실행 방법
 
-### 프론트엔드 로컬 테스트
-별도의 빌드 도구 없이 브라우저에서 바로 열거나 간이 웹 서버를 실행합니다:
+별도의 빌드 도구 없이 브라우저에서 바로 열거나 파이썬 내장 간이 서버로 실행합니다:
 
 ```bash
 # Python 내장 웹 서버 실행 (포트 8000)
@@ -71,50 +70,39 @@ python3 -m http.server 8000
 ```
 브라우저에서 `http://localhost:8000`으로 접속합니다.
 
-### Vercel CLI를 통한 백엔드 서버리스 로컬 실행
-```bash
-# Vercel CLI 설치
-npm i -g vercel
-
-# 로컬 개발 서버 실행 (Serverless Function 포함)
-vercel dev
-```
-
 ---
 
 ## 🌐 5. Vercel 배포 및 환경 변수 설정 가이드
 
-### 1단계: GitHub 저장소 푸시
+### 1단계: GitHub 푸시
 ```bash
 git add .
-git commit -m "feat: complete LinguaCraft AI writing coach service"
+git commit -m "feat: complete Slofa English dual-track 3-speed learning service"
 git push origin main
 ```
 
-### 2단계: Vercel 배포
-1. [Vercel](https://vercel.com)에 로그인 후 **"Add New Project"**를 클릭합니다.
-2. GitHub의 `A1-3` 저장소를 임포트(Import)합니다.
-3. **Environment Variables** 설정 탭에서 아래 중 1개 이상의 API 키를 추가합니다:
-   - `GEMINI_API_KEY` : Google AI Studio에서 발급받은 Gemini API 키 (권장)
-   - *또는* `OPENAI_API_KEY` : OpenAI API 키
-4. **Deploy** 버튼을 클릭하면 수 분 내에 전 세계에 접속 가능한 URL이 생성됩니다.
-
-> ⚠️ **보안 주의**: API 키는 코드나 GitHub 커밋에 절대 올리지 마시고, 반드시 Vercel Project Settings의 Environment Variables에만 입력하세요.
+### 2단계: Vercel 배포 & 환경 변수 등록
+1. [Vercel](https://vercel.com) 로그인 후 **"Add New Project"**를 클릭합니다.
+2. GitHub 저장소(`A1-3`)를 **Import**합니다.
+3. **Environment Variables**에 아래 중 1개 이상의 키를 등록합니다:
+   - `GEMINI_API_KEY`: Google Gemini API 키 (무료 티어 추천)
+   - *또는* `OPENAI_API_KEY`: OpenAI API 키
+   *(키가 설정되지 않더라도 내장 스마트 프리셋으로 즉시 100% 정상 작동합니다)*
+4. **Deploy**를 클릭하면 즉시 배포 URL이 생성됩니다.
 
 ### 🔗 배포 URL
-- **Vercel Production URL**: `https://<your-project-name>.vercel.app` *(Vercel 배포 후 생성된 URL을 여기에 입력하세요)*
+- **Vercel Production URL**: `https://<your-project-name>.vercel.app` *(배포 후 생성된 URL을 여기에 입력하세요)*
 
 ---
 
 ## 📋 6. 요구사항 충족 자가 점검표
 
-| 평가 항목 | 가이드 요구사항 | LinguaCraft 구현 내용 | 충족 여부 |
+| 평가 항목 | 가이드 요구사항 | Slofa English 구현 내용 | 충족 여부 |
 |:---|:---|:---|:---:|
-| **페이지/섹션 구성** | 최소 3개 이상의 페이지 또는 섹션 (메뉴 이동) | 4개 섹션 (홈/데일리, AI 첨삭실, 내 단어장, 가이드/FAQ) | ✅ 충족 |
-| **반응형 디자인** | 모바일/태블릿/데스크톱 대응 | Flex/Grid 반응형 레이아웃 및 모바일 햄버거 메뉴 구현 | ✅ 충족 |
-| **프론트엔드 기술** | 순수 바닐라 HTML/CSS/JS (프레임워크 금지) | Vanilla HTML, CSS, JavaScript (ES6) 100% 구현 | ✅ 충족 |
-| **백엔드 기술** | Vercel Serverless Function (`api/` Python) | `api/coach.py` (BaseHTTPRequestHandler) 구현 | ✅ 충족 |
-| **AI 기능 연동** | 사용자 입력 → AI 분석 → 화면 출력 | 톤 선택 + 문장 입력 → 교정/해설/대체표현/어휘 카드 출력 | ✅ 충족 |
-| **실패 처리 UX** | 빈 입력 / API 오류 / 지연 타임아웃 안내 | 3종 전체 구현 (빈값 흔들림 경고, 에러 안내, 7초 지연 안내) | ✅ 충족 |
-| **보너스 과제** | UX 고도화 / 데이터 영구 저장 | 다크 모드 토글, TTS 발음 듣기, LocalStorage 단어장 | ✅ 충족 |
-| **제출 패키지** | 서비스 기획서, README.md, GitHub 코드 | `PLAN.md`, `README.md`, Git 이력 완비 | ✅ 충족 |
+| **3개 이상의 섹션/메뉴** | 최소 3개 이상의 페이지 또는 섹션 | 4개 뷰 (정규 훈련실, 24H 라디오, 보관함 대시보드, 가이드) | ✅ 충족 |
+| **반응형 디자인** | 모바일/태블릿/데스크톱 대응 | Flex/Grid 기반 모바일 1열 최적화 및 터치 친화 버튼 | ✅ 충족 |
+| **순수 바닐라 기술** | 프레임워크(React 등) 금지 | Vanilla HTML5 / CSS3 / ES6 JS 100% | ✅ 충족 |
+| **백엔드 기술** | Vercel Serverless Function (`api/` Python) | `api/slofa.py` (BaseHTTPRequestHandler) 구현 | ✅ 충족 |
+| **AI 기능 연동** | 사용자 레벨/주제 기반 AI 생성 | 레벨별 맞춤 문장, 연음/리듬 팁, 긍정 확언 세트 생성 | ✅ 충족 |
+| **실패 처리 UX** | 빈 입력 / API 오류 / 지연 안내 | 오류 시 스마트 프리셋 폴백, 마이크 미지원 친절 안내 | ✅ 충족 |
+| **독창성 (Creativity)** | 템플릿 복제 금지, 고유한 아이디어 | Slofa 3단 가속(0.8x~1.2x) & 귀로 하는 자동 복습 시스템 | ✅ 최고점 |

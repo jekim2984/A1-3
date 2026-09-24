@@ -1,618 +1,607 @@
 /**
- * LinguaCraft - Main Application Script
+ * Slofa English (슬로파 잉글리쉬) - Core Application Logic
  * Vanilla JavaScript (ES6+)
- * Handles: Dark Mode, Nav, Daily Idiom Quiz, AI Coach API, TTS, LocalStorage Vocab
+ * Features:
+ *  - Dual-Track Architecture (Core Training vs Always-on Radio)
+ *  - Slofa 3-Speed Accel (0.8x Slo / 1.0x Natural / 1.2x Fast) via Web Speech API
+ *  - 24H Infinite Radio Loop
+ *  - Coach Language Switch (Korean 🇰🇷 / Native English 🇺🇸)
+ *  - Warmup 10s Review & Dual-Track Review Loop
  */
 
-// --- 1. State Management ---
-const AppState = {
-  theme: localStorage.getItem('linguacraft_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
-  savedNotes: JSON.parse(localStorage.getItem('linguacraft_notes') || '[]'),
-  currentResult: null,
+const SlofaState = {
+  theme: localStorage.getItem('slofa_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+  level: localStorage.getItem('slofa_level') || 'grow',
+  coachLang: localStorage.getItem('slofa_coach_lang') || 'ko',
+  currentSpeed: 1.0,
+  currentLesson: null,
   isAnalyzing: false,
-  timeoutTimer: null
+
+  // Warmup & History
+  yesterdaySentence: JSON.parse(localStorage.getItem('slofa_yesterday') || 'null'),
+  masteredSentences: JSON.parse(localStorage.getItem('slofa_mastered') || '[]'),
+  reviewQueuedSentences: JSON.parse(localStorage.getItem('slofa_radio_queue') || '[]'),
+
+  // Radio Player State
+  radioPlaylist: [],
+  radioIndex: 0,
+  isRadioPlaying: false,
+  radioTimer: null
 };
 
-// --- 2. Daily Idioms & Quizzes Data ---
-const IDIOM_COLLECTION = [
-  {
-    phrase: "Hit the nail on the head",
-    meaning: "정곡을 찌르다, 핵심을 정확히 말하다",
-    example: "When you mentioned time management, you really hit the nail on the head.",
-    quiz: {
-      question: "'Hit the nail on the head'의 가장 알맞은 의미는 무엇일까요?",
-      options: [
-        { text: "못질을 잘못해 다치다", correct: false },
-        { text: "핵심과 정곡을 정확히 찌르다", correct: true },
-        { text: "어려운 일에 부딪혀 포기하다", correct: false }
-      ],
-      explanation: "직역하면 '못의 머리를 정확히 때리다'로, 핵심이나 문제의 본질을 정확하게 짚었을 때 쓰는 대표적인 표현입니다."
-    }
-  },
-  {
-    phrase: "Call it a day",
-    meaning: "오늘 일을 마무리하다, 그만 끝내다",
-    example: "We've been working for 8 hours straight. Let's call it a day!",
-    quiz: {
-      question: "'Call it a day'는 어떤 상황에서 쓰일까요?",
-      options: [
-        { text: "하루 종일 약속을 기다릴 때", correct: false },
-        { text: "오늘 하루의 일이나 회의를 마무리할 때", correct: true },
-        { text: "낮 시간 동안 낮잠을 잘 때", correct: false }
-      ],
-      explanation: "업무나 일과를 끝마치고 퇴근하거나 휴식을 취할 때 원어민들이 매일같이 쓰는 표현입니다."
-    }
-  },
-  {
-    phrase: "Cut corners",
-    meaning: "원칙을 무시하고 절차를 생략하다 (날림으로 하다)",
-    example: "Never cut corners when it comes to user security.",
-    quiz: {
-      question: "'Cut corners'의 뜻으로 가장 적절한 것은?",
-      options: [
-        { text: "모서리를 둥글게 자르다", correct: false },
-        { text: "지름길로 편안하게 산책하다", correct: false },
-        { text: "비용이나 노력을 줄이려 대충 날림으로 처리하다", correct: true }
-      ],
-      explanation: "코너를 가로질러 시간을 아끼듯, 정석적인 절차나 품질을 생략하고 얼렁뚱땅 처리할 때 비판적으로 쓰입니다."
-    }
-  },
-  {
-    phrase: "Bite the bullet",
-    meaning: "어려운 상황을 이를 악물고 버티다/받아들이다",
-    example: "I hate dental visits, but I just have to bite the bullet.",
-    quiz: {
-      question: "'Bite the bullet'의 의미는?",
-      options: [
-        { text: "피할 수 없는 힘든 일을 이를 악물고 감수하다", correct: true },
-        { text: "총알을 피해서 무사히 도망치다", correct: false },
-        { text: "화가 나서 상대방에게 소리치다", correct: false }
-      ],
-      explanation: "과거 마취제 없이 수술할 때 총알을 입에 물고 고통을 참았던 것에서 유래한 표현입니다."
-    }
-  }
-];
+// Initial Radio Presets
+const DEFAULT_RADIO = {
+  seed: [
+    { sentence: "Every day is a fresh start.", meaning: "매일매일이 새로운 시작이에요." },
+    { sentence: "I am capable of learning anything step by step.", meaning: "나는 무엇이든 차근차근 배울 수 있어요." },
+    { sentence: "Every day brings new reasons to smile.", meaning: "매일은 미소 지을 새로운 이유를 가져다줘요." },
+    { sentence: "My confidence grows stronger with each small win.", meaning: "작은 성취마다 나의 자신감은 더 단단해져요." },
+    { sentence: "I choose to be kind to myself today.", meaning: "오늘 나는 내 자신에게 친절하기로 선택합니다." }
+  ],
+  grow: [
+    { sentence: "I focus on progress, not perfection.", meaning: "나는 완벽함이 아닌 성장에 집중합니다." },
+    { sentence: "I welcome challenges as opportunities to grow.", meaning: "도전을 나를 성장시키는 소중한 기회로 환영합니다." },
+    { sentence: "My dedication today creates my freedom tomorrow.", meaning: "오늘의 나의 헌신이 내일의 자유를 만듭니다." },
+    { sentence: "I let go of doubt and move forward with clarity.", meaning: "의심을 내려놓고 명확함으로 전진합니다." },
+    { sentence: "Small consistent actions lead to massive positive shifts.", meaning: "작고 꾸준한 행동들이 거대한 긍정적 변화를 이끕니다." }
+  ],
+  bloom: [
+    { sentence: "Consistency transforms ordinary efforts into extraordinary results.", meaning: "꾸준함은 평범한 노력을 비범한 결과로 바꿉니다." },
+    { sentence: "True leadership begins by mastering one's own inner mindset.", meaning: "진정한 리더십은 자신의 내면 마인드셋을 다스리는 것에서 출발합니다." },
+    { sentence: "Resilience is not the absence of difficulty, but the courage to persist.", meaning: "회복탄력성은 어려움이 없는 것이 아니라 굴하지 않고 지속하는 용기입니다." },
+    { sentence: "I cultivate purposeful focus amidst the distractions of the world.", meaning: "세상의 번잡함 속에서도 목적 있는 집중력을 발휘합니다." },
+    { sentence: "Excellence is an enduring habit forged through daily mindfulness.", meaning: "탁월함은 일상의 자각을 통해 벼려진 지속적인 습관입니다." }
+  ]
+};
 
-// Pick today's idiom by day of year or random
-const todayIndex = new Date().getDate() % IDIOM_COLLECTION.length;
-const currentIdiom = IDIOM_COLLECTION[todayIndex];
-
-// --- 3. DOM Elements Initialization ---
+// --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initNavigation();
-  initDailyIdiom();
-  initCoachSection();
-  initSavedNotes();
-  initFaqAccordion();
+  initCoachLangToggle();
+  initTrackNavigation();
+  initLevelSelector();
+  initWarmupCard();
+  initTrainingStudio();
+  initRadioPlayer();
+  initDashboardStats();
+  initGuideFaq();
 });
 
-// --- 4. Theme Management (Dark / Light Mode) ---
+// --- 1. Theme Management ---
 function initTheme() {
-  document.documentElement.setAttribute('data-theme', AppState.theme);
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  if (themeBtn) {
-    themeBtn.textContent = AppState.theme === 'dark' ? '☀️' : '🌙';
-    themeBtn.setAttribute('title', AppState.theme === 'dark' ? '라이트 모드로 변경' : '다크 모드로 변경');
-    themeBtn.addEventListener('click', toggleTheme);
-  }
-}
-
-function toggleTheme() {
-  AppState.theme = AppState.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', AppState.theme);
-  localStorage.setItem('linguacraft_theme', AppState.theme);
-  const themeBtn = document.getElementById('theme-toggle-btn');
-  if (themeBtn) {
-    themeBtn.textContent = AppState.theme === 'dark' ? '☀️' : '🌙';
-    themeBtn.setAttribute('title', AppState.theme === 'dark' ? '라이트 모드로 변경' : '다크 모드로 변경');
-  }
-  showToast(AppState.theme === 'dark' ? '🌙 다크 모드로 전환되었습니다.' : '☀️ 라이트 모드로 전환되었습니다.');
-}
-
-// --- 5. Navigation & Mobile Menu ---
-function initNavigation() {
-  const menuBtn = document.getElementById('mobile-menu-btn');
-  const navLinks = document.getElementById('nav-links');
-  const links = document.querySelectorAll('.nav-link');
-
-  if (menuBtn && navLinks) {
-    menuBtn.addEventListener('click', () => {
-      navLinks.classList.toggle('active');
-    });
-  }
-
-  // Smooth scroll and active state
-  links.forEach(link => {
-    link.addEventListener('click', (e) => {
-      links.forEach(l => l.classList.remove('active'));
-      link.classList.add('active');
-      if (navLinks && navLinks.classList.contains('active')) {
-        navLinks.classList.remove('active');
-      }
-    });
-  });
-
-  // Highlight active section on scroll
-  window.addEventListener('scroll', () => {
-    const sections = document.querySelectorAll('section[id]');
-    const scrollY = window.pageYOffset + 120;
-
-    sections.forEach(section => {
-      const sectionHeight = section.offsetHeight;
-      const sectionTop = section.offsetTop;
-      const sectionId = section.getAttribute('id');
-      const targetNav = document.querySelector(`.nav-link[href="#${sectionId}"]`);
-
-      if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
-        links.forEach(l => l.classList.remove('active'));
-        if (targetNav) targetNav.classList.add('active');
-      }
-    });
-  });
-}
-
-// --- 6. Today's Idiom & Quiz ---
-function initDailyIdiom() {
-  const phraseEl = document.getElementById('daily-idiom-phrase');
-  const meaningEl = document.getElementById('daily-idiom-meaning');
-  const exampleEl = document.getElementById('daily-idiom-example');
-  const idiomTtsBtn = document.getElementById('daily-idiom-tts');
-
-  if (phraseEl) phraseEl.textContent = currentIdiom.phrase;
-  if (meaningEl) meaningEl.textContent = currentIdiom.meaning;
-  if (exampleEl) exampleEl.textContent = `"${currentIdiom.example}"`;
-
-  if (idiomTtsBtn) {
-    idiomTtsBtn.addEventListener('click', () => {
-      speakText(`${currentIdiom.phrase}. ${currentIdiom.example}`);
-    });
-  }
-
-  // Render Quiz
-  const questionEl = document.getElementById('quiz-question');
-  const optionsContainer = document.getElementById('quiz-options');
-  const feedbackEl = document.getElementById('quiz-feedback');
-
-  if (questionEl && optionsContainer) {
-    questionEl.textContent = currentIdiom.quiz.question;
-    optionsContainer.innerHTML = '';
-
-    currentIdiom.quiz.options.forEach((opt, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'quiz-opt-btn';
-      btn.textContent = `${idx + 1}. ${opt.text}`;
-      btn.addEventListener('click', () => {
-        // Disable all buttons
-        const allBtns = optionsContainer.querySelectorAll('.quiz-opt-btn');
-        allBtns.forEach(b => b.disabled = true);
-
-        if (opt.correct) {
-          btn.classList.add('correct');
-          feedbackEl.style.display = 'block';
-          feedbackEl.style.color = 'var(--success)';
-          feedbackEl.innerHTML = `🎉 <strong>정답입니다!</strong> ${currentIdiom.quiz.explanation}`;
-        } else {
-          btn.classList.add('wrong');
-          // Highlight correct one
-          allBtns.forEach((b, i) => {
-            if (currentIdiom.quiz.options[i].correct) b.classList.add('correct');
-          });
-          feedbackEl.style.display = 'block';
-          feedbackEl.style.color = 'var(--danger)';
-          feedbackEl.innerHTML = `💡 <strong>아쉽네요!</strong> ${currentIdiom.quiz.explanation}`;
-        }
-      });
-      optionsContainer.appendChild(btn);
-    });
-  }
-}
-
-// --- 7. AI Writing Coach Core Logic ---
-function initCoachSection() {
-  const textarea = document.getElementById('user-input-text');
-  const charCount = document.getElementById('char-count');
-  const analyzeBtn = document.getElementById('analyze-btn');
-  const sampleBtns = document.querySelectorAll('.sample-btn');
-  const errorAlert = document.getElementById('input-error-alert');
-
-  // Character count & validation
-  if (textarea && charCount) {
-    textarea.addEventListener('input', () => {
-      const count = textarea.value.length;
-      charCount.textContent = `${count} / 1000자`;
-      if (count > 1000) {
-        charCount.style.color = 'var(--danger)';
-      } else {
-        charCount.style.color = 'var(--text-muted)';
-      }
-      if (errorAlert) errorAlert.style.display = 'none';
-    });
-  }
-
-  // Sample prompt buttons
-  sampleBtns.forEach(btn => {
+  document.documentElement.setAttribute('data-theme', SlofaState.theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) {
+    btn.textContent = SlofaState.theme === 'dark' ? '☀️' : '🌙';
     btn.addEventListener('click', () => {
-      const sampleText = btn.getAttribute('data-sample');
-      const targetTone = btn.getAttribute('data-tone');
-      if (textarea && sampleText) {
-        textarea.value = sampleText;
-        textarea.dispatchEvent(new Event('input'));
-      }
-      if (targetTone) {
-        const toneRadio = document.querySelector(`input[name="tone"][value="${targetTone}"]`);
-        if (toneRadio) toneRadio.checked = true;
-      }
-      showToast('샘플 예문이 입력창에 적용되었습니다.');
+      SlofaState.theme = SlofaState.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', SlofaState.theme);
+      localStorage.setItem('slofa_theme', SlofaState.theme);
+      btn.textContent = SlofaState.theme === 'dark' ? '☀️' : '🌙';
+      showToast(SlofaState.theme === 'dark' ? '🌙 다크 모드로 전환되었습니다.' : '☀️ 라이트 모드로 전환되었습니다.');
     });
-  });
-
-  // Submit button
-  if (analyzeBtn) {
-    analyzeBtn.addEventListener('click', handleAnalyze);
   }
-
-  // Setup TTS and copy buttons on result
-  setupResultActionButtons();
 }
 
-async function handleAnalyze() {
-  const textarea = document.getElementById('user-input-text');
-  const errorAlert = document.getElementById('input-error-alert');
-  const errorText = document.getElementById('input-error-text');
-  const loadingBox = document.getElementById('loading-box');
-  const loadingSubtext = document.getElementById('loading-subtext');
-  const placeholderBox = document.getElementById('result-placeholder');
-  const resultContent = document.getElementById('result-content');
-  const analyzeBtn = document.getElementById('analyze-btn');
+// --- 2. Coach Language Switch (Korean / English) ---
+function initCoachLangToggle() {
+  const koBtn = document.getElementById('coach-lang-ko');
+  const enBtn = document.getElementById('coach-lang-en');
 
-  if (AppState.isAnalyzing) return;
+  function updateButtons() {
+    if (koBtn) koBtn.classList.toggle('active', SlofaState.coachLang === 'ko');
+    if (enBtn) enBtn.classList.toggle('active', SlofaState.coachLang === 'en');
+  }
 
-  const text = textarea ? textarea.value.trim() : '';
-  const toneRadio = document.querySelector('input[name="tone"]:checked');
-  const tone = toneRadio ? toneRadio.value : 'casual';
+  if (koBtn) {
+    koBtn.addEventListener('click', () => {
+      SlofaState.coachLang = 'ko';
+      localStorage.setItem('slofa_coach_lang', 'ko');
+      updateButtons();
+      showToast('🇰🇷 한국어 코치 모드로 설정되었습니다.');
+      loadDailyLesson();
+    });
+  }
 
-  // UX Requirement: Empty Input Validation
-  if (!text || text.length < 2) {
-    if (errorAlert && errorText) {
-      errorText.textContent = '교정받을 문장을 최소 2자 이상 입력해주세요.';
-      errorAlert.style.display = 'flex';
-      // Shake animation
-      textarea.style.borderColor = 'var(--danger)';
-      setTimeout(() => { textarea.style.borderColor = 'var(--border-color)'; }, 1500);
-      textarea.focus();
-    }
+  if (enBtn) {
+    enBtn.addEventListener('click', () => {
+      SlofaState.coachLang = 'en';
+      localStorage.setItem('slofa_coach_lang', 'en');
+      updateButtons();
+      showToast('🇺🇸 Native English Coach mode activated.');
+      loadDailyLesson();
+    });
+  }
+  updateButtons();
+}
+
+// --- 3. Dual-Track Primary Navigation ---
+function initTrackNavigation() {
+  const tabs = document.querySelectorAll('.track-tab-btn');
+  const views = document.querySelectorAll('.track-view');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetId = tab.getAttribute('data-target');
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      views.forEach(v => {
+        v.classList.remove('active');
+        if (v.id === targetId) v.classList.add('active');
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+}
+
+// Helper to switch track programmatically
+window.switchTrack = function(targetId) {
+  const targetTab = document.querySelector(`.track-tab-btn[data-target="${targetId}"]`);
+  if (targetTab) targetTab.click();
+};
+
+// --- 4. Level Selector ---
+function initLevelSelector() {
+  const levelBtns = document.querySelectorAll('.level-pill-btn');
+  levelBtns.forEach(btn => {
+    const lvl = btn.getAttribute('data-level');
+    if (lvl === SlofaState.level) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      levelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      SlofaState.level = lvl;
+      localStorage.setItem('slofa_level', lvl);
+      updateLevelBadge();
+      loadDailyLesson();
+      refreshRadioPlaylist();
+      showToast(`레벨이 [${getLevelName(lvl)}]으로 설정되었습니다.`);
+    });
+  });
+  updateLevelBadge();
+}
+
+function updateLevelBadge() {
+  const badge = document.getElementById('current-level-badge');
+  if (badge) badge.textContent = getLevelName(SlofaState.level);
+}
+
+function getLevelName(lvl) {
+  if (lvl === 'seed') return '🌱 Seed (초급)';
+  if (lvl === 'bloom') return '🌸 Bloom (고급)';
+  return '🌿 Grow (중급)';
+}
+
+// --- 5. Warmup 10s Review Card ---
+function initWarmupCard() {
+  const card = document.getElementById('warmup-card');
+  const textEl = document.getElementById('warmup-sentence-text');
+  const listenBtn = document.getElementById('warmup-listen-btn');
+
+  // If no yesterday sentence, use a welcoming warmup
+  const item = SlofaState.yesterdaySentence || {
+    sentence: "Every step I take builds my future.",
+    meaning: "내가 내딛는 모든 발걸음이 내 미래를 만듭니다."
+  };
+
+  if (textEl) textEl.textContent = `"${item.sentence}"`;
+
+  if (listenBtn) {
+    listenBtn.addEventListener('click', () => {
+      speakSentence(item.sentence, 1.0);
+      showToast('🔊 어제 문장을 1.0배속으로 낭독했습니다! 이제 오늘 진도를 나가볼까요?');
+    });
+  }
+}
+
+// --- 6. Track 1: Training Studio Core ---
+function initTrainingStudio() {
+  initSpeedButtons();
+  initActionButtons();
+  initReviewFork();
+  loadDailyLesson();
+}
+
+function initSpeedButtons() {
+  const speedBtns = document.querySelectorAll('.speed-btn');
+  speedBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      speedBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const rate = parseFloat(btn.getAttribute('data-speed'));
+      SlofaState.currentSpeed = rate;
+
+      const labels = {
+        0.8: '🐢 0.8x Slo(w) 연음 정밀 분석 모드',
+        1.0: '🚶 1.0x Natural 표준 체득 모드',
+        1.2: '🏎️ 1.2x Fast 순발력 극대화 모드'
+      };
+      showToast(labels[rate] || `${rate}x 속도`);
+
+      // Auto play sentence with selected speed
+      if (SlofaState.currentLesson) {
+        speakSentence(SlofaState.currentLesson.target_sentence, rate);
+      }
+    });
+  });
+}
+
+function initActionButtons() {
+  const playBtn = document.getElementById('studio-play-btn');
+  const micBtn = document.getElementById('studio-mic-btn');
+
+  if (playBtn) {
+    playBtn.addEventListener('click', () => {
+      if (SlofaState.currentLesson) {
+        speakSentence(SlofaState.currentLesson.target_sentence, SlofaState.currentSpeed);
+      }
+    });
+  }
+
+  if (micBtn) {
+    micBtn.addEventListener('click', handleSpeechRecognition);
+  }
+}
+
+function handleSpeechRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const panel = document.getElementById('speech-test-panel');
+  const resultText = document.getElementById('speech-result-text');
+
+  if (!SpeechRecognition) {
+    showToast('⚠️ 현재 브라우저는 마이크 음성 인식을 지원하지 않습니다. (크롬 권장)');
     return;
   }
 
-  if (text.length > 1000) {
-    if (errorAlert && errorText) {
-      errorText.textContent = '입력 문장이 1,000자를 초과했습니다. 문장을 조금 줄여주세요.';
-      errorAlert.style.display = 'flex';
-      textarea.focus();
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  if (panel) panel.style.display = 'block';
+  if (resultText) resultText.innerHTML = '<span class="mic-active-pulse">🎙️ 듣고 있습니다... 문장을 소리 내어 낭독하세요!</span>';
+
+  recognition.onresult = (event) => {
+    const spoken = event.results[0][0].transcript;
+    const target = SlofaState.currentLesson.target_sentence;
+    const accuracy = calculateSimilarity(spoken, target);
+
+    let feedbackMsg = '';
+    if (accuracy >= 80) {
+      feedbackMsg = `🎉 완벽합니다! (일치도 ${accuracy}%) 원어민처럼 매끄럽게 발음하셨어요.`;
+    } else if (accuracy >= 50) {
+      feedbackMsg = `👍 좋아요! (일치도 ${accuracy}%) 0.8배속으로 연음을 조금만 더 신경 써보세요.`;
+    } else {
+      feedbackMsg = `💪 괜찮아요! (일치도 ${accuracy}%) 0.8배속으로 천천히 다시 들어보고 따라 해보세요.`;
     }
-    return;
-  }
 
-  // Clear previous error
-  if (errorAlert) errorAlert.style.display = 'none';
-
-  // Enter Loading State
-  AppState.isAnalyzing = true;
-  if (analyzeBtn) {
-    analyzeBtn.disabled = true;
-    analyzeBtn.innerHTML = '<span>분석 중...</span>';
-  }
-  if (placeholderBox) placeholderBox.style.display = 'none';
-  if (resultContent) resultContent.style.display = 'none';
-  if (loadingBox) loadingBox.style.display = 'block';
-
-  // UX Requirement: Timeout / Delay Notification (After 8 seconds)
-  if (AppState.timeoutTimer) clearTimeout(AppState.timeoutTimer);
-  AppState.timeoutTimer = setTimeout(() => {
-    if (AppState.isAnalyzing && loadingSubtext) {
-      loadingSubtext.textContent = '원어민 튜터가 심층 피드백과 대체 표현을 정리하고 있습니다. 잠시만 더 기다려주세요...';
-      loadingSubtext.style.color = 'var(--primary)';
+    if (resultText) {
+      resultText.innerHTML = `
+        <div style="margin-bottom: 0.4rem;"><strong>인식된 음성:</strong> "${escapeHtml(spoken)}"</div>
+        <div style="color: var(--primary); font-weight: 700;">${feedbackMsg}</div>
+      `;
     }
-  }, 7000);
+  };
+
+  recognition.onerror = (event) => {
+    if (resultText) {
+      resultText.textContent = '음성 인식 시간이 초과되었거나 마이크 접근 권한이 없습니다. 다시 시도해주세요.';
+    }
+  };
+
+  recognition.start();
+}
+
+function calculateSimilarity(str1, str2) {
+  const s1 = str1.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ');
+  const s2 = str2.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(' ');
+  let matches = 0;
+  s1.forEach(word => {
+    if (s2.includes(word)) matches++;
+  });
+  return Math.min(100, Math.round((matches / Math.max(s1.length, s2.length)) * 100));
+}
+
+// Fetch Daily Lesson from Backend / API
+async function loadDailyLesson(customSentenceHint = '') {
+  const sentenceEl = document.getElementById('target-sentence-display');
+  const meaningEl = document.getElementById('korean-meaning-display');
+  const rhythmEl = document.getElementById('rhythm-tips-display');
+  const coachTitle = document.getElementById('coach-title-display');
+  const coachBody = document.getElementById('coach-body-display');
+  const patternList = document.getElementById('pattern-expansion-list');
 
   try {
-    const response = await fetch('/api/coach', {
+    const res = await fetch('/api/slofa', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, tone })
+      body: JSON.stringify({
+        action: 'daily_lesson',
+        level: SlofaState.level,
+        coach_lang: SlofaState.coachLang,
+        target_sentence: customSentenceHint
+      })
     });
 
-    const result = await response.json();
+    const json = await res.json();
+    if (json.success && json.data) {
+      const data = json.data;
+      SlofaState.currentLesson = data;
 
-    if (!response.ok || !result.success) {
-      handleApiError(result, response.status);
-      return;
+      if (sentenceEl) sentenceEl.textContent = data.target_sentence;
+      if (meaningEl) meaningEl.textContent = data.korean_meaning;
+      if (rhythmEl) rhythmEl.textContent = `🎵 리듬 가이드: ${data.rhythm_tips || data.target_sentence}`;
+      
+      if (coachTitle) coachTitle.textContent = SlofaState.coachLang === 'ko' ? '💡 Slofa 한국어 코치 팁' : '💡 Slofa Native Coach Guide';
+      if (coachBody) coachBody.textContent = data.coach_advice;
+
+      // Render Pattern Expansions
+      if (patternList) {
+        patternList.innerHTML = '';
+        (data.pattern_expansions || []).forEach(pat => {
+          const li = document.createElement('li');
+          li.className = 'pattern-item';
+          li.innerHTML = `
+            <span>${escapeHtml(pat)}</span>
+            <button class="btn-icon btn-sm" title="발음 듣기" onclick="speakSentence('${escapeSingleQuotes(pat)}', 1.0)">🔊</button>
+          `;
+          patternList.appendChild(li);
+        });
+      }
     }
-
-    // Success! Render Result
-    AppState.currentResult = result.data;
-    renderCoachResult(result.data);
-    showToast('✨ AI 첨삭 및 뉘앙스 분석이 완료되었습니다!');
-
   } catch (err) {
-    console.error('Fetch error:', err);
-    // Network or server crash
-    renderFallbackOrError('네트워크 오류가 발생했습니다. 인터넷 연결 상태를 확인하고 잠시 후 다시 시도해주세요.');
-  } finally {
-    AppState.isAnalyzing = false;
-    if (AppState.timeoutTimer) clearTimeout(AppState.timeoutTimer);
-    if (loadingBox) loadingBox.style.display = 'none';
-    if (analyzeBtn) {
-      analyzeBtn.disabled = false;
-      analyzeBtn.innerHTML = '<span>✨ AI 첨삭 및 뉘앙스 분석 시작</span>';
-    }
+    console.error('Lesson fetch error, fallback active', err);
   }
 }
 
-function handleApiError(result, statusCode) {
-  const loadingBox = document.getElementById('loading-box');
-  const errorAlert = document.getElementById('input-error-alert');
-  const errorText = document.getElementById('input-error-text');
-  const placeholderBox = document.getElementById('result-placeholder');
+// Review Decision Fork Logic
+function initReviewFork() {
+  const masterBtn = document.getElementById('fork-master-btn');
+  const queueRadioBtn = document.getElementById('fork-radio-btn');
 
-  if (loadingBox) loadingBox.style.display = 'none';
+  if (masterBtn) {
+    masterBtn.addEventListener('click', () => {
+      if (!SlofaState.currentLesson) return;
+      const sentence = SlofaState.currentLesson.target_sentence;
 
-  let msg = result.message || '서버와 통신 중 알 수 없는 오류가 발생했습니다.';
-  if (result.error === 'NO_API_KEY') {
-    msg = '🔑 서버에 AI API 키가 아직 설정되지 않았습니다. Vercel 환경 변수에 GEMINI_API_KEY 또는 OPENAI_API_KEY를 등록해주세요.';
-  }
-
-  if (errorAlert && errorText) {
-    errorText.innerHTML = `${msg} <button class="btn btn-sm btn-secondary" style="margin-left: 0.5rem;" onclick="loadDemoResult()">데모 결과 미리보기</button>`;
-    errorAlert.style.display = 'flex';
-  }
-
-  if (placeholderBox) placeholderBox.style.display = 'block';
-}
-
-function renderFallbackOrError(message) {
-  const errorAlert = document.getElementById('input-error-alert');
-  const errorText = document.getElementById('input-error-text');
-  const placeholderBox = document.getElementById('result-placeholder');
-
-  if (errorAlert && errorText) {
-    errorText.innerHTML = `${message} <button class="btn btn-sm btn-secondary" style="margin-left: 0.5rem;" onclick="loadDemoResult()">데모 결과 보기</button>`;
-    errorAlert.style.display = 'flex';
-  }
-  if (placeholderBox) placeholderBox.style.display = 'block';
-}
-
-// Demo fallback so users can always see what the output looks like even prior to entering API keys
-window.loadDemoResult = function() {
-  const demoData = {
-    original_text: "I write this email because I want to ask about meeting time.",
-    corrected_text: "I am writing this email to inquire about our scheduled meeting time.",
-    tone: "business",
-    tone_label: "정중한 비즈니스 톤",
-    explanation: "1) 현재 진행되는 목적을 나타내므로 'I write' 대신 현재진행형 'I am writing'이 훨씬 자연스럽습니다.\n2) 비즈니스 이메일에서는 단순한 'want to ask'보다 격식 있고 정중한 어휘인 'inquire about'을 사용하는 것이 전문적입니다.",
-    native_alternatives: [
-      "I'm reaching out to confirm the details for our upcoming meeting.",
-      "Could you please clarify the scheduled time for our meeting?",
-      "I would appreciate it if you could let me know the meeting schedule."
-    ],
-    key_vocabulary: [
-      { word: "inquire about", meaning: "~에 대해 문의하다 / 묻다 (격식체)" },
-      { word: "reach out to", meaning: "~에게 연락을 취하다 / 소통하다" },
-      { word: "upcoming", meaning: "곧 다가오는, 예정된" }
-    ]
-  };
-  AppState.currentResult = demoData;
-  renderCoachResult(demoData);
-  const errorAlert = document.getElementById('input-error-alert');
-  if (errorAlert) errorAlert.style.display = 'none';
-  showToast('💡 데모 분석 결과가 로드되었습니다.');
-};
-
-function renderCoachResult(data) {
-  const resultContent = document.getElementById('result-content');
-  const toneBadge = document.getElementById('res-tone-badge');
-  const sentenceEl = document.getElementById('res-sentence');
-  const explanationEl = document.getElementById('res-explanation');
-  const nativeList = document.getElementById('res-native-list');
-  const vocabList = document.getElementById('res-vocab-list');
-
-  if (toneBadge) toneBadge.textContent = data.tone_label || data.tone;
-  if (sentenceEl) sentenceEl.textContent = data.corrected_text;
-  if (explanationEl) explanationEl.textContent = data.explanation;
-
-  // Alternatives
-  if (nativeList) {
-    nativeList.innerHTML = '';
-    (data.native_alternatives || []).forEach(alt => {
-      const li = document.createElement('li');
-      li.className = 'native-item';
-      li.innerHTML = `
-        <span>${escapeHtml(alt)}</span>
-        <button class="btn-icon btn-sm" title="발음 듣기" onclick="speakText('${escapeSingleQuotes(alt)}')">🔊</button>
-      `;
-      nativeList.appendChild(li);
-    });
-  }
-
-  // Key Vocabulary
-  if (vocabList) {
-    vocabList.innerHTML = '';
-    (data.key_vocabulary || []).forEach(item => {
-      const chip = document.createElement('div');
-      chip.className = 'vocab-chip';
-      chip.innerHTML = `
-        <span class="vocab-word">${escapeHtml(item.word)}</span>
-        <span>${escapeHtml(item.meaning)}</span>
-      `;
-      vocabList.appendChild(chip);
-    });
-  }
-
-  if (resultContent) resultContent.style.display = 'block';
-}
-
-function setupResultActionButtons() {
-  const copyBtn = document.getElementById('copy-result-btn');
-  const ttsBtn = document.getElementById('tts-result-btn');
-  const saveBtn = document.getElementById('save-vocab-btn');
-
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      if (!AppState.currentResult) return;
-      navigator.clipboard.writeText(AppState.currentResult.corrected_text).then(() => {
-        showToast('📋 교정된 문장이 클립보드에 복사되었습니다!');
-      }).catch(() => {
-        showToast('복사에 실패했습니다.');
-      });
-    });
-  }
-
-  if (ttsBtn) {
-    ttsBtn.addEventListener('click', () => {
-      if (!AppState.currentResult) return;
-      speakText(AppState.currentResult.corrected_text);
-    });
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener('click', () => {
-      if (!AppState.currentResult) return;
-      saveCurrentToNotes();
-    });
-  }
-}
-
-// --- 8. Saved Notes & Vocabulary (LocalStorage CRUD) ---
-function initSavedNotes() {
-  renderSavedNotes();
-
-  const searchInput = document.getElementById('vocab-search-input');
-  const clearAllBtn = document.getElementById('clear-all-notes-btn');
-
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      renderSavedNotes(query);
-    });
-  }
-
-  if (clearAllBtn) {
-    clearAllBtn.addEventListener('click', () => {
-      if (AppState.savedNotes.length === 0) {
-        showToast('비울 단어장이 없습니다.');
-        return;
+      // Save to mastered
+      if (!SlofaState.masteredSentences.some(s => s.sentence === sentence)) {
+        SlofaState.masteredSentences.unshift({
+          sentence,
+          meaning: SlofaState.currentLesson.korean_meaning,
+          date: new Date().toLocaleDateString('ko-KR')
+        });
+        localStorage.setItem('slofa_mastered', JSON.stringify(SlofaState.masteredSentences));
       }
-      if (confirm('저장된 모든 표현을 삭제하시겠습니까?')) {
-        AppState.savedNotes = [];
-        localStorage.setItem('linguacraft_notes', JSON.stringify([]));
-        renderSavedNotes();
-        showToast('단어장이 초기화되었습니다.');
-      }
+
+      // Record as yesterday sentence for tomorrow's warmup
+      SlofaState.yesterdaySentence = {
+        sentence,
+        meaning: SlofaState.currentLesson.korean_meaning
+      };
+      localStorage.setItem('slofa_yesterday', JSON.stringify(SlofaState.yesterdaySentence));
+
+      initDashboardStats();
+      showToast('🏆 [완전 정복] 보관함에 저장되었습니다! 내일 워밍업 문장으로 자동 등록됩니다.');
+    });
+  }
+
+  if (queueRadioBtn) {
+    queueRadioBtn.addEventListener('click', () => {
+      if (!SlofaState.currentLesson) return;
+      const item = {
+        sentence: SlofaState.currentLesson.target_sentence,
+        meaning: SlofaState.currentLesson.korean_meaning,
+        isCustomReview: true
+      };
+
+      // Push to radio queue
+      SlofaState.reviewQueuedSentences = SlofaState.reviewQueuedSentences.filter(s => s.sentence !== item.sentence);
+      SlofaState.reviewQueuedSentences.unshift(item);
+      localStorage.setItem('slofa_radio_queue', JSON.stringify(SlofaState.reviewQueuedSentences));
+
+      refreshRadioPlaylist();
+      showToast('📻 내일 귀 트이기 라디오 플레이리스트에 우선 등록되었습니다! BGM으로 자연스럽게 귀에 익혀보세요.');
     });
   }
 }
 
-function saveCurrentToNotes() {
-  const data = AppState.currentResult;
-  if (!data) return;
+// --- 7. Track 2: 24H Always-on Radio Logic ---
+function initRadioPlayer() {
+  refreshRadioPlaylist();
 
-  // Check duplicate
-  const exists = AppState.savedNotes.some(n => n.text === data.corrected_text);
-  if (exists) {
-    showToast('⚠️ 이미 단어장에 저장된 문장입니다.');
-    return;
+  const masterBtn = document.getElementById('master-radio-play-btn');
+  const prevBtn = document.getElementById('radio-prev-btn');
+  const nextBtn = document.getElementById('radio-next-btn');
+
+  if (masterBtn) {
+    masterBtn.addEventListener('click', toggleRadioPlay);
   }
-
-  const newEntry = {
-    id: Date.now(),
-    text: data.corrected_text,
-    original: data.original_text,
-    tone: data.tone_label || data.tone,
-    explanation: data.explanation,
-    date: new Date().toLocaleDateString('ko-KR')
-  };
-
-  AppState.savedNotes.unshift(newEntry);
-  localStorage.setItem('linguacraft_notes', JSON.stringify(AppState.savedNotes));
-  renderSavedNotes();
-  showToast('⭐ 내 단어장에 성공적으로 저장되었습니다!');
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => changeRadioTrack(-1));
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => changeRadioTrack(1));
+  }
 }
 
-function renderSavedNotes(searchQuery = '') {
-  const container = document.getElementById('saved-cards-container');
-  const countBadge = document.getElementById('saved-notes-count');
+function refreshRadioPlaylist() {
+  // Combine custom review queue at top + default presets for level
+  const baseItems = DEFAULT_RADIO[SlofaState.level] || DEFAULT_RADIO.grow;
+  SlofaState.radioPlaylist = [...SlofaState.reviewQueuedSentences, ...baseItems];
+  renderRadioPlaylistUI();
+  updateRadioActiveTrack();
+}
+
+function renderRadioPlaylistUI() {
+  const container = document.getElementById('radio-playlist-container');
   if (!container) return;
 
-  let filtered = AppState.savedNotes;
-  if (searchQuery) {
-    filtered = filtered.filter(n =>
-      n.text.toLowerCase().includes(searchQuery) ||
-      (n.original && n.original.toLowerCase().includes(searchQuery)) ||
-      (n.explanation && n.explanation.toLowerCase().includes(searchQuery))
-    );
-  }
-
-  if (countBadge) countBadge.textContent = `${AppState.savedNotes.length}개`;
-
-  if (filtered.length === 0) {
-    container.innerHTML = `
-      <div class="empty-vocab">
-        <p style="font-size: 2rem; margin-bottom: 0.5rem;">📖</p>
-        <p>${searchQuery ? '검색 결과와 일치하는 표현이 없습니다.' : '아직 저장된 표현이 없습니다. AI 첨삭 후 단어장에 저장해보세요!'}</p>
-      </div>
-    `;
-    return;
-  }
-
   container.innerHTML = '';
-  filtered.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'saved-card';
-    card.innerHTML = `
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.4rem;">
-          <span class="tone-badge" style="font-size: 0.75rem;">${escapeHtml(item.tone)}</span>
-          <span class="saved-card-meta">${item.date}</span>
+  SlofaState.radioPlaylist.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.className = `playlist-item ${idx === SlofaState.radioIndex ? 'active' : ''}`;
+    div.innerHTML = `
+      <div style="flex: 1;">
+        <div class="playlist-sentence">
+          ${item.isCustomReview ? '<span class="warmup-badge" style="margin-right: 0.4rem;">복습예약</span>' : ''}
+          ${escapeHtml(item.sentence)}
         </div>
-        <p class="saved-card-text">${escapeHtml(item.text)}</p>
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">원문: "${escapeHtml(item.original || '')}"</p>
+        <div class="playlist-meaning">${escapeHtml(item.meaning)}</div>
       </div>
-      <div class="saved-card-footer">
-        <button class="btn btn-sm btn-secondary" onclick="speakText('${escapeSingleQuotes(item.text)}')">🔊 듣기</button>
-        <button class="btn btn-sm btn-secondary" style="color: var(--danger); border-color: var(--danger-light);" onclick="deleteSavedNote(${item.id})">삭제</button>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button class="btn btn-sm btn-secondary" onclick="playSingleRadioIndex(${idx})">▶️ 재생</button>
+        <button class="btn btn-sm btn-accent" title="트랙 1 훈련실로 가져가기" onclick="takeToStudio('${escapeSingleQuotes(item.sentence)}')">🔥 훈련실로</button>
       </div>
     `;
-    container.appendChild(card);
+    container.appendChild(div);
   });
 }
 
-window.deleteSavedNote = function(id) {
-  AppState.savedNotes = AppState.savedNotes.filter(n => n.id !== id);
-  localStorage.setItem('linguacraft_notes', JSON.stringify(AppState.savedNotes));
-  renderSavedNotes();
-  showToast('삭제되었습니다.');
+function updateRadioActiveTrack() {
+  const item = SlofaState.radioPlaylist[SlofaState.radioIndex];
+  if (!item) return;
+
+  const sentenceEl = document.getElementById('radio-current-sentence');
+  const meaningEl = document.getElementById('radio-current-meaning');
+
+  if (sentenceEl) sentenceEl.textContent = item.sentence;
+  if (meaningEl) meaningEl.textContent = item.meaning;
+
+  renderRadioPlaylistUI();
+}
+
+function toggleRadioPlay() {
+  SlofaState.isRadioPlaying = !SlofaState.isRadioPlaying;
+  const masterBtn = document.getElementById('master-radio-play-btn');
+  const wave = document.getElementById('radio-visualizer-wave');
+
+  if (SlofaState.isRadioPlaying) {
+    if (masterBtn) masterBtn.textContent = '⏸️';
+    if (wave) wave.classList.add('playing');
+    showToast('📻 24H 귀 트이기 라디오가 재생을 시작합니다 (무한 반복).');
+    playRadioSequence();
+  } else {
+    if (masterBtn) masterBtn.textContent = '▶️';
+    if (wave) wave.classList.remove('playing');
+    window.speechSynthesis.cancel();
+    if (SlofaState.radioTimer) clearTimeout(SlofaState.radioTimer);
+    showToast('라디오 재생이 일시정지되었습니다.');
+  }
+}
+
+// 24H Infinite Loop Sequence
+function playRadioSequence() {
+  if (!SlofaState.isRadioPlaying) return;
+
+  const item = SlofaState.radioPlaylist[SlofaState.radioIndex];
+  if (!item) return;
+
+  updateRadioActiveTrack();
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(item.sentence);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.95; // Gentle listening pace
+
+  utterance.onend = () => {
+    if (!SlofaState.isRadioPlaying) return;
+    // 2.5s calm pause between sentences, then loop to next
+    SlofaState.radioTimer = setTimeout(() => {
+      if (!SlofaState.isRadioPlaying) return;
+      SlofaState.radioIndex = (SlofaState.radioIndex + 1) % SlofaState.radioPlaylist.length;
+      playRadioSequence();
+    }, 2500);
+  };
+
+  utterance.onerror = () => {
+    if (!SlofaState.isRadioPlaying) return;
+    SlofaState.radioTimer = setTimeout(() => {
+      SlofaState.radioIndex = (SlofaState.radioIndex + 1) % SlofaState.radioPlaylist.length;
+      playRadioSequence();
+    }, 2000);
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function changeRadioTrack(delta) {
+  SlofaState.radioIndex = (SlofaState.radioIndex + delta + SlofaState.radioPlaylist.length) % SlofaState.radioPlaylist.length;
+  updateRadioActiveTrack();
+  if (SlofaState.isRadioPlaying) {
+    playRadioSequence();
+  }
+}
+
+window.playSingleRadioIndex = function(idx) {
+  SlofaState.radioIndex = idx;
+  if (!SlofaState.isRadioPlaying) {
+    toggleRadioPlay();
+  } else {
+    playRadioSequence();
+  }
 };
 
-// --- 9. FAQ Accordion ---
-function initFaqAccordion() {
+// Bridge: Bring sentence from Track 2 (Radio) to Track 1 (Studio)
+window.takeToStudio = function(sentence) {
+  showToast(`🔥 "${sentence}" 문장을 Slofa 3단 가속 훈련실로 전달했습니다!`);
+  loadDailyLesson(sentence);
+  switchTrack('track-training');
+};
+
+// --- 8. Dashboard & Archive Stats ---
+function initDashboardStats() {
+  const masterCount = document.getElementById('stat-mastered-count');
+  const queueCount = document.getElementById('stat-queue-count');
+  const masteredList = document.getElementById('dashboard-mastered-container');
+
+  if (masterCount) masterCount.textContent = `${SlofaState.masteredSentences.length}개`;
+  if (queueCount) queueCount.textContent = `${SlofaState.reviewQueuedSentences.length}개`;
+
+  if (masteredList) {
+    if (SlofaState.masteredSentences.length === 0) {
+      masteredList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 2rem;">아직 정복한 문장이 없습니다. 훈련실에서 3단 가속으로 문장을 정복해보세요!</p>';
+    } else {
+      masteredList.innerHTML = '';
+      SlofaState.masteredSentences.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'slofa-card';
+        card.style.padding = '1rem 1.25rem';
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; font-size: 1.05rem;">${escapeHtml(item.sentence)}</div>
+              <div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(item.meaning)} • ${item.date}</div>
+            </div>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-sm btn-secondary" onclick="speakSentence('${escapeSingleQuotes(item.sentence)}', 1.0)">🔊 듣기</button>
+              <button class="btn btn-sm btn-accent" onclick="takeToStudio('${escapeSingleQuotes(item.sentence)}')">다시 훈련</button>
+            </div>
+          </div>
+        `;
+        masteredList.appendChild(card);
+      });
+    }
+  }
+}
+
+// --- 9. Guide & FAQ Accordion ---
+function initGuideFaq() {
   const faqItems = document.querySelectorAll('.faq-item');
   faqItems.forEach(item => {
-    const questionBtn = item.querySelector('.faq-question');
-    if (questionBtn) {
-      questionBtn.addEventListener('click', () => {
+    const qBtn = item.querySelector('.faq-question');
+    if (qBtn) {
+      qBtn.addEventListener('click', () => {
         const isOpen = item.classList.contains('open');
         faqItems.forEach(i => i.classList.remove('open'));
-        if (!isOpen) {
-          item.classList.add('open');
-        }
+        if (!isOpen) item.classList.add('open');
       });
     }
   });
 }
 
-// --- 10. Utilities (SpeechSynthesis & Toast & Security) ---
-window.speakText = function(text) {
+// --- Speech Synthesis Helper ---
+window.speakSentence = function(text, rate = 1.0) {
   if (!('speechSynthesis' in window)) {
     showToast('이 브라우저는 음성 합성을 지원하지 않습니다.');
     return;
@@ -620,10 +609,11 @@ window.speakText = function(text) {
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = 'en-US';
-  utterance.rate = 0.95;
+  utterance.rate = rate;
   window.speechSynthesis.speak(utterance);
 };
 
+// --- Toast & Security Helpers ---
 function showToast(message) {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -639,7 +629,7 @@ function showToast(message) {
     setTimeout(() => {
       if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 300);
-  }, 3000);
+  }, 3200);
 }
 
 function escapeHtml(str) {
