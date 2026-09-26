@@ -9,31 +9,39 @@
 
 ## 📌 1. 서비스 소개
 
-**슬로파 잉글리쉬 (Slofa English)**는 *"영어가 아직 들리지도 않는데 억지로 말하게 강요하는 고통"*을 없애고, **소파(Sofa)에 편안하게 기대어 긍정 에너지를 채우며 3단 가속으로 영어를 체화**하는 웹 서비스입니다.
+**슬로파 잉글리쉬 (Slofa English)**는 *"영어가 아직 들리지도 않는데 억지로 말하게 강요하는 고통과 시험 피로감"*을 없애고, **소파(Sofa)에 편안하게 기대어 긍정 에너지를 채우며 3단 가속으로 영어를 체화**하는 웹 서비스입니다.
 
 ### 🌟 핵심 차별점 & 듀얼 트랙(Dual-Track)
 1. **[트랙 1] 수준별 정규 훈련실 (Core Training)**:
-   - 첫 방문 시 1회 레벨 진단(Seed 초급 / Grow 중급 / Bloom 고급) 후 자동 저장 (시험 피로 방지)
-   - **워밍업 10초 입 풀기**: 오늘 진도 전, 어제 배운 문장으로 10초 만에 가볍게 소리 내어 낭독
-   - **선생님 언어 모드**: 🇰🇷 친절한 한국어 해설 vs 🇺🇸 100% 원어민 몰입 가이드 선택
+   - **미션 기반 무자각 자동 레벨 평가 (Stealth Assessment)**:
+     - 시작부터 부담스러운 시험을 보지 않아도, 오늘 주어진 문장을 3단계로 읽고 말해본 결과를 분석하여 AI가 최적 레벨(Seed 초급 / Grow 중급 / Bloom 고급)을 자동 배정합니다.
+   - **단어별 발음 일치도 정밀 시각화 (Word Diff Visualizer)**:
+     - `[🟢 통과]` 정확한 발음 / `[🟠 주의]` 연음 불안정 / `[🔴 누락]` 생략된 단어를 색상으로 분해하고 원포인트 코칭을 제공합니다.
+   - **적응형 학습 연계 (Adaptive Learning Loop)**:
+     - 오늘 아쉬웠던 발음 취약점을 기억하여 다음 수업 문장에 우선 반영합니다.
+   - **스마트 주제 유지 (Smart Persistence)**:
+     - 관심 있는 상황이나 테마를 직접 입력할 수 있으며, 따로 변경하지 않으면 매일 그 주제가 유지되어 맞춤 문장이 이어집니다.
+   - **24시간 락 해제 쾌속 패스 (Fast-Pass)**:
+     - 문장이 쉬우면 24시간을 기다리지 않고 `[🚀 쉬워요! 다음 단계 바로 도전]`을 눌러 즉시 다음 문장/상위 레벨로 직행할 수 있습니다.
    - **Slofa 3단계 가속 훈련**:
      - 🐢 `0.8x Slo`: 연음과 억양을 슬로우비디오처럼 정밀 분석
      - 🚶 `1.0x Natural`: 원어민 표준 호흡으로 자연 체득
      - 🏎️ `1.2x Fast`: 머뭇거림 없는 순발력 극대화
-   - **패턴 확장**: 문장의 뼈대를 일상 표현 3가지로 확장
-   - **스마트 복습 분기**: 어려운 문장은 클릭 한 번으로 **"내일 라디오로 보내기"** (다음 날 BGM으로 귀에 자동 복습)
+   - **패턴 확장 & 스마트 복습 분기**:
+     - 어려운 문장은 클릭 한 번으로 **"내일 라디오로 보내기"** ➔ 다음 날 BGM으로 귀에 자동 복습!
 2. **[트랙 2] 24H 긍정 귀 트이기 라디오 (Always-on Radio)**:
-   - 정규 진도나 테스트와 완전 무관한 **독립형 BGM 프로그램**
-   - 내 수준에 맞는 긍정 확언 문장이 **들릴 때까지 24시간 무한 연속 재생**
-   - 흘려듣다 꽂히는 문장은 `[🔥 훈련실로 가져가기]` 버튼으로 즉시 3단 가속 정복
+   - 정규 진도나 테스트와 완전 무관한 **독립형 BGM 프로그램**.
+   - **리스닝 속도 조절**: `0.8x Slo`(힐링/슬로우) / `1.0x Natural`(표준) / `1.2x Fast`(순발력 뇌자극) 자유 선택.
+   - **하루 1문장 한계 없는 무제한 재생**: 관심 테마(힐링, 활력 모닝 등)의 확언들이 24시간 무한 연속 재생되며, `[✨ AI 새 확언 불러오기]`로 계속 확장.
+   - 흘려듣다 꽂히는 문장은 `[🔥 훈련실로 가져가기]` 버튼으로 즉시 3단 가속 정복.
 
 ---
 
 ## 🛠️ 2. 기술 스택
 
-- **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+, Web Speech API TTS/STT, LocalStorage)
+- **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+, Web Speech API TTS/STT, LocalStorage, Word Diff Engine)
 - **백엔드 (Serverless)**: Python 3.9+ (Vercel Serverless Function `api/slofa.py`)
-- **AI API**: Google Gemini 1.5 Flash (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 내장 고품질 프리셋(Smart Fallback) 탑재
+- **AI API**: Google Gemini 1.5 Flash (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 100% 무중단 클라이언트/서버 스마트 프리셋(Smart Fallback) 탑재
 - **배포 플랫폼**: Vercel (GitHub 연동 자동 배포)
 
 ---
@@ -44,11 +52,11 @@
 A1-3/
 ├── index.html            # 메인 싱글 페이지 웹 앱 (듀얼 트랙 & 4개 뷰)
 ├── css/
-│   └── style.css         # Slofa 감성 테마, 3단 가속 UI, 반응형 스타일
+│   └── style.css         # Slofa 감성 테마, 단어 diff 뱃지, 속도 조절기 반응형 스타일
 ├── js/
-│   └── app.js           # 듀얼 트랙 제어, Web Speech 3단 가속, 무한 라디오 루프
+│   └── app.js           # 듀얼 트랙 제어, 단어별 음성 채점, 무자각 레벨 평가, 라디오 루프
 ├── api/
-│   ├── slofa.py          # [백엔드] Vercel Python AI Serverless Function
+│   ├── slofa.py          # [백엔드] Vercel Python AI Serverless Function (Adaptive Learning API)
 │   └── coach.py          # 호환성 브릿지 엔드포인트
 ├── vercel.json           # Vercel 서버리스 라우팅 설정
 ├── requirements.txt      # 파이썬 의존성 패키지 정의
@@ -68,7 +76,7 @@ A1-3/
 # Python 내장 웹 서버 실행 (포트 8000)
 python3 -m http.server 8000
 ```
-브라우저에서 `http://localhost:8000`으로 접속합니다.
+브라우저에서 `http://localhost:8000`으로 접속합니다. (프론트엔드 자체에 100% 무중단 스마트 Fallback 엔진이 탑재되어 로컬에서도 모든 기능이 완벽하게 동작합니다.)
 
 ---
 
@@ -77,7 +85,7 @@ python3 -m http.server 8000
 ### 1단계: GitHub 푸시
 ```bash
 git add .
-git commit -m "feat: complete Slofa English dual-track 3-speed learning service"
+git commit -m "feat: complete adaptive stealth level evaluation, word diff coaching, smart persistent topics, fast-pass and radio speed controls"
 git push origin main
 ```
 
@@ -103,6 +111,6 @@ git push origin main
 | **반응형 디자인** | 모바일/태블릿/데스크톱 대응 | Flex/Grid 기반 모바일 1열 최적화 및 터치 친화 버튼 | ✅ 충족 |
 | **순수 바닐라 기술** | 프레임워크(React 등) 금지 | Vanilla HTML5 / CSS3 / ES6 JS 100% | ✅ 충족 |
 | **백엔드 기술** | Vercel Serverless Function (`api/` Python) | `api/slofa.py` (BaseHTTPRequestHandler) 구현 | ✅ 충족 |
-| **AI 기능 연동** | 사용자 레벨/주제 기반 AI 생성 | 레벨별 맞춤 문장, 연음/리듬 팁, 긍정 확언 세트 생성 | ✅ 충족 |
+| **AI 기능 연동** | 사용자 레벨/주제 기반 AI 생성 | 레벨/주제 맞춤 문장, 연음/리듬 팁, 긍정 확언 세트 생성 | ✅ 충족 |
 | **실패 처리 UX** | 빈 입력 / API 오류 / 지연 안내 | 오류 시 스마트 프리셋 폴백, 마이크 미지원 친절 안내 | ✅ 충족 |
-| **독창성 (Creativity)** | 템플릿 복제 금지, 고유한 아이디어 | Slofa 3단 가속(0.8x~1.2x) & 귀로 하는 자동 복습 시스템 | ✅ 최고점 |
+| **독창성 (Creativity)** | 템플릿 복제 금지, 고유한 아이디어 | 미션 기반 무자각 레벨 평가, 단어별 diff 코칭, 쾌속 패스 | ✅ 최고점 |

@@ -71,23 +71,57 @@
         <button id="warmup-listen-btn" class="btn btn-secondary btn-sm" style="flex-shrink: 0;">🔊 1.0x 입 풀기</button>
       </div>
 
-      <!-- 2. Level Setting Bar -->
+      <!-- 2. Topic & Level Setting Bar -->
+      <div class="topic-setting-bar">
+        <div class="topic-info">
+          <span class="topic-label">📌 나의 집중 관심 주제:</span>
+          <span id="training-topic-badge" class="topic-badge">🌿 성장과 자신감</span>
+        </div>
+        <button id="change-training-topic-btn" class="btn btn-sm btn-outline">✏️ 주제 변경</button>
+      </div>
+
+      <!-- Inline Topic Editor Panel (Hidden by default) -->
+      <div id="training-topic-editor" class="topic-editor-panel" style="display: none;">
+        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem;">✍️ 연습하고 싶은 관심사나 기분을 직접 입력하세요</div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">따로 변경하지 않으면 이 주제가 매일 그대로 유지되어 맞춤 문장이 이어집니다.</p>
+        <div class="topic-input-group">
+          <input type="text" id="training-topic-input" class="topic-input" placeholder="예: 발표 전 긴장 풀기, 퇴근 후 맥주 한잔의 여유, 다이어트 의지 등">
+          <button id="save-training-topic-btn" class="btn btn-primary btn-sm">저장 & 문장 생성</button>
+          <button id="cancel-training-topic-btn" class="btn btn-secondary btn-sm">취소</button>
+        </div>
+        <div class="topic-quick-tags">
+          <span style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">추천 키워드:</span>
+          <button class="tag-pill" data-topic="성장과 자신감 (Growth & Confidence)">#자신감&자존감</button>
+          <button class="tag-pill" data-topic="마음 평온과 힐링 (Calm & Healing)">#퇴근후힐링</button>
+          <button class="tag-pill" data-topic="업무와 비즈니스 성공 (Career & Business)">#업무미팅성공</button>
+          <button class="tag-pill" data-topic="작심삼일 극복과 습관 형성 (Habits & Motivation)">#작심삼일극복</button>
+          <button class="tag-pill" data-topic="편안한 인간관계와 대화 (Relationships & Empathy)">#따뜻한인간관계</button>
+        </div>
+      </div>
+
       <div class="level-bar">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
           <span style="font-weight: 700; font-size: 0.95rem;">내 수준:</span>
           <span id="current-level-badge" class="level-tag">🌿 Grow (중급)</span>
+          <span class="stealth-badge" title="별도 시험 없이 오늘 훈련을 수행하면 AI가 수준을 자동 평가합니다">🤖 미션 기반 자동 진단 중</span>
         </div>
-        <div class="level-selector-btns">
-          <button class="level-pill-btn" data-level="seed">🌱 Seed (초급)</button>
-          <button class="level-pill-btn active" data-level="grow">🌿 Grow (중급)</button>
-          <button class="level-pill-btn" data-level="bloom">🌸 Bloom (고급)</button>
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <button id="fetch-next-random-btn" class="btn btn-sm btn-secondary" title="현재 주제로 다른 문장 불러오기">🎲 다른 문장 훈련</button>
+          <div class="level-selector-btns">
+            <button class="level-pill-btn" data-level="seed" title="초급">🌱 Seed</button>
+            <button class="level-pill-btn active" data-level="grow" title="중급">🌿 Grow</button>
+            <button class="level-pill-btn" data-level="bloom" title="고급">🌸 Bloom</button>
+          </div>
         </div>
       </div>
 
       <!-- 3. Slofa Training Studio Hero Box -->
       <div class="studio-box">
-        <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
-          🎯 Today's Goal Sentence
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em;">
+            🎯 Today's Goal Sentence
+          </div>
+          <span id="studio-topic-tag" class="topic-tag-mini">🌿 성장과 자신감</span>
         </div>
         <div id="target-sentence-display" class="target-sentence-hero">I focus on progress, not perfection.</div>
         <div id="korean-meaning-display" class="korean-meaning-hero">나는 완벽함이 아닌 성장에 집중합니다.</div>
@@ -116,12 +150,30 @@
         <!-- Audio & Speaking Record Bar -->
         <div class="action-controls-row">
           <button id="studio-play-btn" class="btn btn-primary">🔊 선택 속도로 듣기</button>
-          <button id="studio-mic-btn" class="btn btn-secondary">🎙️ 소리 내어 말해보기 (정확도 채점)</button>
+          <button id="studio-mic-btn" class="btn btn-secondary">🎙️ 소리 내어 말해보기 (정밀 진단)</button>
         </div>
 
-        <!-- Speaking Test Panel -->
-        <div id="speech-test-panel" class="speech-test-panel">
-          <div id="speech-result-text">마이크 버튼을 누르면 발음 정확도와 리듬 피드백을 실시간으로 확인합니다.</div>
+        <!-- Speaking Test & Detail Breakdown Panel -->
+        <div id="speech-test-panel" class="speech-test-panel" style="display: none;">
+          <div id="speech-result-status" style="margin-bottom: 0.8rem; font-weight: 700; font-size: 1.05rem;">
+            🎙️ 녹음 상태를 확인하는 중입니다...
+          </div>
+          
+          <!-- Word Diff Visualizer (Pass / Warn / Miss) -->
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.35rem;">단어별 발음 일치 분석:</div>
+          <div id="speech-word-diff" class="word-diff-container">
+            <!-- Populated by JS: green/orange/red badges -->
+          </div>
+
+          <!-- Detail Coaching Breakdown -->
+          <div id="speech-detail-box" class="speech-detail-box" style="margin-top: 1rem;">
+            <!-- Populated by JS: Detailed explanation on pronunciation, linking, missing words -->
+          </div>
+
+          <!-- Stealth Auto Level Evaluation Card (Appears after speaking test) -->
+          <div id="auto-eval-card" class="auto-eval-card" style="display: none;">
+            <!-- Populated by JS -->
+          </div>
         </div>
       </div>
 
@@ -142,12 +194,13 @@
         </ul>
       </div>
 
-      <!-- 6. Review Fork Decision Box -->
+      <!-- 6. Review Fork Decision Box with Fast-Pass -->
       <div class="review-fork-box">
         <h3 style="font-size: 1.15rem; font-weight: 800; margin-bottom: 0.4rem;">🤔 오늘 문장이 내 입에 완전히 붙었나요?</h3>
-        <p style="font-size: 0.9rem; color: var(--text-secondary);">컨디션에 맞게 선택하세요. 부족한 문장은 내일 라디오로 보내면 귀로 자동 복습됩니다.</p>
+        <p style="font-size: 0.9rem; color: var(--text-secondary);">쉬우면 24시간 기다림 없이 즉시 다음 단계로 질주하세요! 부족한 문장은 라디오로 귀 자동 복습됩니다.</p>
         <div class="fork-actions">
-          <button id="fork-master-btn" class="btn btn-primary">🏆 네, 완벽히 마스터했어요! (완료 저장)</button>
+          <button id="fork-master-btn" class="btn btn-primary">🏆 완벽히 마스터했어요! (오늘 달성)</button>
+          <button id="fork-fastpass-btn" class="btn btn-success" title="24시간 기다리지 않고 다음 단계 문장 바로 시작">🚀 쉬워요! 다음 단계 바로 도전</button>
           <button id="fork-radio-btn" class="btn btn-accent">📻 아직 어려워요 → 내일 라디오로 보내기</button>
         </div>
       </div>
@@ -157,10 +210,38 @@
          VIEW 2: [트랙 2] 24H 긍정 귀 트이기 라디오 (Always-on Radio)
          ========================================================================== -->
     <section id="track-radio" class="track-view">
+      <!-- Radio Theme Setting Bar -->
+      <div class="topic-setting-bar radio-theme-bar">
+        <div class="topic-info">
+          <span class="topic-label">📻 라디오 재생 테마:</span>
+          <span id="radio-theme-badge" class="topic-badge">🧘 평온과 마인드 힐링</span>
+        </div>
+        <button id="change-radio-theme-btn" class="btn btn-sm btn-outline">✏️ 테마 변경</button>
+      </div>
+
+      <!-- Inline Radio Theme Editor Panel (Hidden by default) -->
+      <div id="radio-theme-editor" class="topic-editor-panel" style="display: none;">
+        <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem;">✍️ 라디오로 흘려듣고 싶은 분위기나 테마를 직접 입력하세요</div>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.75rem;">변경하지 않으면 이 테마로 24시간 끊김 없이 긍정 확언 BGM이 이어집니다.</p>
+        <div class="topic-input-group">
+          <input type="text" id="radio-theme-input" class="topic-input" placeholder="예: 잠들기 전 따뜻한 위로, 출근길 에너지 뿜뿜, 카페에서 책 읽을 때 등">
+          <button id="save-radio-theme-btn" class="btn btn-primary btn-sm">테마 적용 & 재생</button>
+          <button id="cancel-radio-theme-btn" class="btn btn-secondary btn-sm">취소</button>
+        </div>
+        <div class="topic-quick-tags">
+          <span style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">추천 테마:</span>
+          <button class="tag-pill radio-tag" data-topic="평온과 마인드 힐링 (Calm & Healing)">#차분한힐링</button>
+          <button class="tag-pill radio-tag" data-topic="활기찬 아침 긍정 에너지 (Morning Energy)">#모닝에너지</button>
+          <button class="tag-pill radio-tag" data-topic="성장과 흔들리지 않는 용기 (Courage & Resilience)">#자신감&용기</button>
+          <button class="tag-pill radio-tag" data-topic="퇴근 후 나를 위한 쉼 (Rest & Peace)">#퇴근길BGM</button>
+        </div>
+      </div>
+
       <div class="radio-hero-panel">
         <div class="radio-live-badge">
           <div class="radio-live-dot"></div>
           <span>Live • 24H Always-On Radio</span>
+          <span id="radio-theme-indicator" style="margin-left: 0.5rem; opacity: 0.9; font-weight: 600;">[🧘 평온과 힐링]</span>
         </div>
         <div id="radio-current-sentence" class="radio-current-sentence">I focus on progress, not perfection.</div>
         <div id="radio-current-meaning" class="radio-current-meaning">나는 완벽함이 아닌 성장에 집중합니다.</div>
@@ -175,6 +256,16 @@
           <button id="radio-next-btn" class="btn-icon" title="다음 문장">⏭️</button>
         </div>
 
+        <!-- Radio Speed Selector (0.8x / 1.0x / 1.2x) -->
+        <div class="radio-speed-selector">
+          <span class="speed-pill-label">🎚️ 리스닝 속도:</span>
+          <div class="radio-speed-btns">
+            <button class="radio-speed-btn" data-speed="0.8">🐢 0.8x Slo</button>
+            <button class="radio-speed-btn active" data-speed="1.0">🚶 1.0x Natural</button>
+            <button class="radio-speed-btn" data-speed="1.2">🏎️ 1.2x Fast</button>
+          </div>
+        </div>
+
         <!-- Audio Wave Visualizer -->
         <div id="radio-visualizer-wave" class="visualizer-wave">
           <div class="wave-bar"></div>
@@ -185,11 +276,14 @@
         </div>
       </div>
 
-      <!-- Playlist of Affirmations -->
+      <!-- Playlist of Affirmations with AI Refresh -->
       <div class="slofa-card">
-        <div class="radio-playlist-title">
-          <h3 style="font-size: 1.15rem; font-weight: 800;">📋 현재 재생 중인 긍정 확언 리스트</h3>
-          <span style="font-size: 0.85rem; color: var(--text-muted);">마음에 드는 문장은 훈련실로 보내 3단 가속으로 정복하세요!</span>
+        <div class="radio-playlist-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem;">
+          <div>
+            <h3 style="font-size: 1.15rem; font-weight: 800;">📋 현재 테마 긍정 확언 플레이리스트</h3>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">마음에 꽂히는 문장은 언제든 훈련실로 가져가 3단 가속으로 마스터하세요!</span>
+          </div>
+          <button id="radio-ai-refresh-btn" class="btn btn-sm btn-secondary" title="현재 테마의 새로운 긍정 확언을 AI로 추가 생성">✨ 새 확언 계속 불러오기 (AI)</button>
         </div>
         <div id="radio-playlist-container">
           <!-- Populated by JS -->
