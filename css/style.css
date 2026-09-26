@@ -239,7 +239,12 @@ body {
   font-weight: 700;
   font-size: 0.95rem;
   color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: var(--transition);
+}
+.track-tab-btn span {
+  white-space: nowrap;
 }
 
 .track-tab-btn:hover {
@@ -519,13 +524,21 @@ body {
   50% { opacity: 0.4; }
 }
 
-/* Coach Advice Card */
+/* Coach Advice Card with Audio Coaching */
 .coach-card {
   border-left: 4px solid var(--primary);
   background: var(--bg-surface);
   padding: 1.25rem;
   border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
+}
+.coach-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .coach-title {
   font-size: 0.95rem;
@@ -534,7 +547,25 @@ body {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.4rem;
+}
+.coach-audio-btn {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.coach-audio-btn.speaking {
+  background: var(--primary);
+  color: white;
+  animation: pulseDot 1.5s infinite;
+}
+.btn-repeating {
+  background: linear-gradient(135deg, #4338ca, #6366f1) !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.45) !important;
+  animation: pulseDot 1.8s infinite;
 }
 .coach-body {
   font-size: 0.95rem;

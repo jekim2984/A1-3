@@ -215,7 +215,7 @@ const CLIENT_TOPIC_RADIO = {
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
-  initCoachLangToggle();
+  initCoachAudioButton();
   initTrackNavigation();
   initTopicControls();
   initLevelSelector();
@@ -241,36 +241,97 @@ function initTheme() {
   }
 }
 
-// --- 2. Coach Language Switch ---
-function initCoachLangToggle() {
-  const koBtn = document.getElementById('coach-lang-ko');
-  const enBtn = document.getElementById('coach-lang-en');
+// --- 2. Coach Voice Audio Guide ---
+let isCoachSpeaking = false;
 
-  function updateButtons() {
-    if (koBtn) koBtn.classList.toggle('active', SlofaState.coachLang === 'ko');
-    if (enBtn) enBtn.classList.toggle('active', SlofaState.coachLang === 'en');
+function initCoachAudioButton() {
+  const speakBtn = document.getElementById('coach-speak-btn');
+  if (speakBtn) {
+    speakBtn.addEventListener('click', toggleCoachAudio);
+  }
+}
+
+function stopCoachSpeech() {
+  isCoachSpeaking = false;
+  window.speechSynthesis.cancel();
+  const speakBtn = document.getElementById('coach-speak-btn');
+  if (speakBtn) {
+    speakBtn.classList.remove('speaking');
+    speakBtn.innerHTML = '🎙️ 코치 음성 듣기';
+  }
+  const evalAudioBtn = document.getElementById('eval-coach-speak-btn');
+  if (evalAudioBtn) {
+    evalAudioBtn.classList.remove('speaking');
+    evalAudioBtn.innerHTML = '🎙️ 진단 피드백 음성 듣기';
+  }
+}
+
+function toggleCoachAudio() {
+  if (isCoachSpeaking) {
+    stopCoachSpeech();
+    showToast('코치 음성 해설을 일시 정지했습니다.');
+    return;
   }
 
-  if (koBtn) {
-    koBtn.addEventListener('click', () => {
-      SlofaState.coachLang = 'ko';
-      localStorage.setItem('slofa_coach_lang', 'ko');
-      updateButtons();
-      showToast('🇰🇷 한국어 코치 모드로 설정되었습니다.');
-      loadDailyLesson();
-    });
+  if (!('speechSynthesis' in window)) {
+    showToast('⚠️ 현재 브라우저는 음성 합성을 지원하지 않습니다.');
+    return;
   }
 
-  if (enBtn) {
-    enBtn.addEventListener('click', () => {
-      SlofaState.coachLang = 'en';
-      localStorage.setItem('slofa_coach_lang', 'en');
-      updateButtons();
-      showToast('🇺🇸 Native English Coach mode activated.');
-      loadDailyLesson();
-    });
+  // 중복 재생 방지 (반복 훈련 및 라디오 정지)
+  if (typeof stopTrainingRepeat === 'function') stopTrainingRepeat();
+  if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') toggleRadioPlay();
+
+  const coachBody = document.getElementById('coach-body-display');
+  let rawText = coachBody ? coachBody.textContent.trim() : '';
+  if (!rawText && SlofaState.currentLesson) {
+    rawText = SlofaState.currentLesson.coach_advice || '';
   }
-  updateButtons();
+
+  if (!rawText) {
+    showToast('설명할 코치 팁 내용이 없습니다.');
+    return;
+  }
+
+  // 안내 멘트 정제
+  const cleanText = rawText.replace(/^한국어\s*코치\s*:\s*/i, '').trim();
+  const script = `슬로파 코치 팁입니다. ${cleanText}`;
+
+  speakKoreanCoachAdvice(script, () => {
+    stopCoachSpeech();
+  });
+
+  const speakBtn = document.getElementById('coach-speak-btn');
+  if (speakBtn) {
+    speakBtn.classList.add('speaking');
+    speakBtn.innerHTML = '⏹️ 음성 멈추기';
+  }
+  isCoachSpeaking = true;
+  showToast('🎙️ 한국어 코치가 발음 팁을 직접 설명합니다.');
+}
+
+// Helper to speak Korean text with Korean voice
+function speakKoreanCoachAdvice(text, onComplete) {
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ko-KR';
+  utterance.rate = 0.95; // 명확하고 편안한 코칭 속도
+
+  const voices = window.speechSynthesis.getVoices();
+  const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang.startsWith('ko'));
+  if (koVoice) {
+    utterance.voice = koVoice;
+  }
+
+  utterance.onend = () => {
+    if (typeof onComplete === 'function') onComplete();
+  };
+
+  utterance.onerror = () => {
+    if (typeof onComplete === 'function') onComplete();
+  };
+
+  window.speechSynthesis.speak(utterance);
 }
 
 // --- 3. Navigation ---
@@ -288,6 +349,12 @@ function initTrackNavigation() {
         v.classList.remove('active');
         if (v.id === targetId) v.classList.add('active');
       });
+
+      if (targetId !== 'track-training') {
+        stopTrainingRepeat();
+        stopCoachSpeech();
+      }
+
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
   });
@@ -470,6 +537,86 @@ function initTrainingStudio() {
   loadDailyLesson();
 }
 
+// Training Repeat (Shadowing) State
+let isTrainingRepeating = false;
+let trainingRepeatTimer = null;
+
+function stopTrainingRepeat() {
+  isTrainingRepeating = false;
+  if (trainingRepeatTimer) {
+    clearTimeout(trainingRepeatTimer);
+    trainingRepeatTimer = null;
+  }
+  const repeatBtn = document.getElementById('studio-repeat-btn');
+  if (repeatBtn) {
+    repeatBtn.classList.remove('btn-repeating');
+    repeatBtn.innerHTML = '🔁 반복해서 듣기 (섀도잉)';
+  }
+}
+
+function playTrainingRepeatCycle() {
+  if (!isTrainingRepeating || !SlofaState.currentLesson) {
+    stopTrainingRepeat();
+    return;
+  }
+
+  if (!('speechSynthesis' in window)) {
+    showToast('⚠️ 이 브라우저는 음성 합성을 지원하지 않습니다.');
+    stopTrainingRepeat();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(SlofaState.currentLesson.target_sentence);
+  utterance.lang = 'en-US';
+  utterance.rate = SlofaState.currentSpeed;
+
+  utterance.onend = () => {
+    if (!isTrainingRepeating) return;
+    // 문장 재생 완료 후 입으로 따라 말할 수 있는 1.6초의 여유 간격 후 재재생
+    trainingRepeatTimer = setTimeout(() => {
+      if (isTrainingRepeating) {
+        playTrainingRepeatCycle();
+      }
+    }, 1600);
+  };
+
+  utterance.onerror = () => {
+    stopTrainingRepeat();
+  };
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function toggleTrainingRepeat() {
+  if (isTrainingRepeating) {
+    stopTrainingRepeat();
+    window.speechSynthesis.cancel();
+    showToast('🔁 반복 듣기를 종료했습니다.');
+    return;
+  }
+
+  if (!SlofaState.currentLesson) {
+    showToast('학습 문장이 아직 로드되지 않았습니다.');
+    return;
+  }
+
+  // 코치 음성이나 라디오가 재생 중이면 중지
+  stopCoachSpeech();
+  if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
+    toggleRadioPlay();
+  }
+
+  isTrainingRepeating = true;
+  const repeatBtn = document.getElementById('studio-repeat-btn');
+  if (repeatBtn) {
+    repeatBtn.classList.add('btn-repeating');
+    repeatBtn.innerHTML = '⏹️ 반복 멈추기';
+  }
+  showToast(`🔁 [${SlofaState.currentSpeed}x 속도] 반복 섀도잉 듣기를 시작합니다. 입으로 따라 소리 내보세요!`);
+  playTrainingRepeatCycle();
+}
+
 function initSpeedButtons() {
   const speedBtns = document.querySelectorAll('.speed-btn');
   speedBtns.forEach(btn => {
@@ -487,7 +634,13 @@ function initSpeedButtons() {
       };
       showToast(labels[rate] || `${rate}x 속도`);
 
-      if (SlofaState.currentLesson) {
+      // 반복 듣기 중이라면 즉시 새 속도로 자연스럽게 이어감
+      if (isTrainingRepeating) {
+        if (trainingRepeatTimer) clearTimeout(trainingRepeatTimer);
+        window.speechSynthesis.cancel();
+        playTrainingRepeatCycle();
+      } else if (SlofaState.currentLesson) {
+        stopCoachSpeech();
         speakSentence(SlofaState.currentLesson.target_sentence, rate);
       }
     });
@@ -495,24 +648,28 @@ function initSpeedButtons() {
 }
 
 function initActionButtons() {
-  const playBtn = document.getElementById('studio-play-btn');
+  const repeatBtn = document.getElementById('studio-repeat-btn');
   const micBtn = document.getElementById('studio-mic-btn');
 
-  if (playBtn) {
-    playBtn.addEventListener('click', () => {
-      if (SlofaState.currentLesson) {
-        speakSentence(SlofaState.currentLesson.target_sentence, SlofaState.currentSpeed);
-      }
-    });
+  if (repeatBtn) {
+    repeatBtn.addEventListener('click', toggleTrainingRepeat);
   }
 
   if (micBtn) {
-    micBtn.addEventListener('click', handleSpeechRecognition);
+    micBtn.addEventListener('click', () => {
+      // 마이크 진단 시 다른 음성 모두 정지
+      stopTrainingRepeat();
+      stopCoachSpeech();
+      handleSpeechRecognition();
+    });
   }
 }
 
 // --- STT Speech Recognition with Word Diff Visualizer & Detail Coaching ---
 function handleSpeechRecognition() {
+  stopTrainingRepeat();
+  stopCoachSpeech();
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const panel = document.getElementById('speech-test-panel');
   const statusEl = document.getElementById('speech-result-status');
@@ -631,30 +788,45 @@ function analyzeWordDiff(targetSentence, spokenSentence) {
   };
 }
 
-// Render Detailed Breakdown Explanation
+// Render Detailed Breakdown Explanation with Voice Coaching
 function renderDetailCoachingBox(container, analysis, targetSentence) {
-  let html = '';
+  let html = `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px dashed var(--border-color); flex-wrap: wrap; gap: 0.5rem;">
+      <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.4rem;">
+        <span>🩺</span>
+        <span>상세 코칭 리포트</span>
+      </div>
+      <button id="eval-coach-speak-btn" class="btn btn-sm btn-outline coach-audio-btn" title="진단된 발음 피드백을 코치 음성으로 직접 듣기">🎙️ 코치 분석 듣기</button>
+    </div>
+  `;
+
+  let speechAdviceNarrative = '';
 
   // 1. Missing / Articulation Guide
   if (analysis.missedWords.length > 0) {
+    const missedList = analysis.missedWords.join("', '");
+    speechAdviceNarrative += `단어 ${analysis.missedWords.join(', ')} 발음이 생략되거나 뭉개졌습니다. 혀와 입술 위치를 명확히 하고 한 번 더 소리 내보세요. `;
     html += `
       <div class="detail-coach-item">
         <span class="coach-point-tag tag-pron">🎯 발음 & 누락 단어</span>
         <div>
-          단어 <strong>'${analysis.missedWords.join("', '")}'</strong> 발음이 뭉개졌거나 생략되었습니다. 입술과 혀의 위치를 명확히 잡고 한 번 더 또렷하게 소리 내보세요.
+          단어 <strong>'${missedList}'</strong> 발음이 뭉개졌거나 생략되었습니다. 입술과 혀의 위치를 명확히 잡고 한 번 더 또렷하게 소리 내보세요.
         </div>
       </div>
     `;
   } else if (analysis.warnWords.length > 0) {
+    const warnList = analysis.warnWords.join("', '");
+    speechAdviceNarrative += `단어 ${analysis.warnWords.join(', ')}의 뉘앙스가 약간 어색합니다. 천천히 들으며 원어민의 입모양 호흡을 따라 해보세요. `;
     html += `
       <div class="detail-coach-item">
         <span class="coach-point-tag tag-pron">👍 발음 다듬기</span>
         <div>
-          단어 <strong>'${analysis.warnWords.join("', '")}'</strong>의 뉘앙스가 약간 어색합니다. 0.8x 속도로 천천히 들으면서 원어민의 입모양 호흡을 따라 해보세요.
+          단어 <strong>'${warnList}'</strong>의 뉘앙스가 약간 어색합니다. 0.8x 속도로 천천히 들으면서 원어민의 입모양 호흡을 따라 해보세요.
         </div>
       </div>
     `;
   } else {
+    speechAdviceNarrative += '모든 단어를 누락 없이 또렷하고 유창하게 발화하셨습니다! 발음과 전달력이 매우 훌륭합니다. ';
     html += `
       <div class="detail-coach-item">
         <span class="coach-point-tag" style="background: rgba(16,185,129,0.15); color: var(--accent-green);">✨ 완벽한 전달력</span>
@@ -666,6 +838,7 @@ function renderDetailCoachingBox(container, analysis, targetSentence) {
   }
 
   // 2. Linking & Rhythm Guide
+  speechAdviceNarrative += '단어를 끊어 읽기보다 부드럽게 이어주는 연음에 집중해보세요.';
   html += `
     <div class="detail-coach-item">
       <span class="coach-point-tag tag-link">🎵 연음 & 리듬감</span>
@@ -691,6 +864,33 @@ function renderDetailCoachingBox(container, analysis, targetSentence) {
   }
 
   container.innerHTML = html;
+
+  // Bind Voice Coaching Button for Evaluation Breakdown
+  const evalBtn = document.getElementById('eval-coach-speak-btn');
+  if (evalBtn) {
+    evalBtn.addEventListener('click', () => {
+      if (isCoachSpeaking) {
+        stopCoachSpeech();
+        showToast('코치 음성을 일시 정지했습니다.');
+        return;
+      }
+
+      stopTrainingRepeat();
+      if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
+        toggleRadioPlay();
+      }
+
+      const script = `말하기 정밀 진단 코칭 결과입니다. ${speechAdviceNarrative}`;
+      evalBtn.classList.add('speaking');
+      evalBtn.innerHTML = '⏹️ 음성 멈추기';
+      isCoachSpeaking = true;
+      showToast('🎙️ 코치가 말하기 진단 결과를 자세히 설명합니다.');
+
+      speakKoreanCoachAdvice(script, () => {
+        stopCoachSpeech();
+      });
+    });
+  }
 }
 
 // Trigger Stealth Auto Level Evaluation
@@ -822,11 +1022,14 @@ async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false)
 
   // Helper to render lesson object
   function renderLesson(data) {
+    stopTrainingRepeat();
+    stopCoachSpeech();
+
     SlofaState.currentLesson = data;
     if (sentenceEl) sentenceEl.textContent = data.target_sentence;
     if (meaningEl) meaningEl.textContent = data.korean_meaning;
     if (rhythmEl) rhythmEl.textContent = `🎵 리듬 가이드: ${data.rhythm_tips || data.target_sentence}`;
-    if (coachTitle) coachTitle.textContent = SlofaState.coachLang === 'ko' ? '💡 Slofa 한국어 코치 팁' : '💡 Slofa Native Coach Guide';
+    if (coachTitle) coachTitle.textContent = '💡 Slofa 코치 원포인트 팁';
     if (coachBody) coachBody.textContent = data.coach_advice;
 
     if (patternList) {
@@ -1091,6 +1294,10 @@ function toggleRadioPlay() {
   const wave = document.getElementById('radio-visualizer-wave');
 
   if (SlofaState.isRadioPlaying) {
+    // 훈련실 반복 재생 및 코치 음성 중지
+    stopTrainingRepeat();
+    stopCoachSpeech();
+
     if (masterBtn) masterBtn.textContent = '⏸️';
     if (wave) wave.classList.add('playing');
     showToast(`📻 24H 귀 트이기 라디오가 [${SlofaState.radioSpeed}x] 속도로 무한 재생됩니다.`);
@@ -1157,6 +1364,11 @@ window.playSingleRadioIndex = function(idx) {
 
 // Bridge: Bring sentence from Track 2 (Radio) to Track 1 (Studio)
 window.takeToStudio = function(sentence) {
+  if (SlofaState.isRadioPlaying) {
+    toggleRadioPlay();
+  }
+  stopTrainingRepeat();
+  stopCoachSpeech();
   showToast(`🔥 "${sentence}" 문장을 3단 가속 훈련실로 전달했습니다!`);
   loadDailyLesson(sentence);
   switchTrack('track-training');

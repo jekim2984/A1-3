@@ -21,7 +21,7 @@
         </div>
       </a>
 
-      <!-- Header Controls: Coach Language, AI Status & Theme -->
+      <!-- Header Controls: AI Status & Theme -->
       <div class="header-actions">
         <!-- AI Live Status Indicator -->
         <div id="header-ai-status" class="ai-status-indicator preset" title="Gemini 3.5 Flash-Lite 연동 상태">
@@ -29,34 +29,28 @@
           <span id="header-ai-text">스마트 모드</span>
         </div>
 
-        <!-- Coach Language Switch -->
-        <div class="coach-lang-toggle" title="선생님 설명 언어 설정">
-          <button id="coach-lang-ko" class="coach-lang-btn active">🇰🇷 한국어</button>
-          <button id="coach-lang-en" class="coach-lang-btn">🇺🇸 English</button>
-        </div>
-
         <button id="theme-toggle-btn" class="btn-icon" aria-label="테마 전환" title="테마 전환">🌙</button>
       </div>
     </div>
   </header>
 
-  <!-- Dual-Track Primary Navigation Bar -->
+  <!-- Primary Navigation Bar -->
   <nav class="track-nav-bar">
     <div class="container">
       <div class="track-tabs">
         <button class="track-tab-btn active" data-target="track-training">
-          <span>🎯 트랙 1: 수준별 훈련실</span>
+          <span>🎯 집중 훈련실</span>
           <span class="track-badge">10분 집중</span>
         </button>
         <button class="track-tab-btn radio-tab" data-target="track-radio">
-          <span>📻 트랙 2: 귀 트이기 라디오</span>
+          <span>📻 귀트이기 라디오</span>
           <span class="track-badge" style="background: rgba(234,88,12,0.15);">24H 무한</span>
         </button>
         <button class="track-tab-btn" data-target="track-dashboard">
-          <span>📊 보관함 & 성적표</span>
+          <span>📊 학습 보관함</span>
         </button>
         <button class="track-tab-btn" data-target="track-guide">
-          <span>💡 가이드 & FAQ</span>
+          <span>💡 학습 가이드</span>
         </button>
       </div>
     </div>
@@ -154,7 +148,7 @@
 
         <!-- Audio & Speaking Record Bar -->
         <div class="action-controls-row">
-          <button id="studio-play-btn" class="btn btn-primary">🔊 선택 속도로 듣기</button>
+          <button id="studio-repeat-btn" class="btn btn-primary" title="현재 속도로 문장을 반복해서 들으며 입으로 따라 연습하기">🔁 반복해서 듣기 (섀도잉)</button>
           <button id="studio-mic-btn" class="btn btn-secondary">🎙️ 소리 내어 말해보기 (정밀 진단)</button>
         </div>
 
@@ -182,9 +176,12 @@
         </div>
       </div>
 
-      <!-- 4. Coach Advice Card -->
+      <!-- 4. Coach Advice Card with Audio Coaching -->
       <div class="coach-card">
-        <div id="coach-title-display" class="coach-title">💡 Slofa 한국어 코치 팁</div>
+        <div class="coach-header-row">
+          <div id="coach-title-display" class="coach-title">💡 Slofa 코치 원포인트 팁</div>
+          <button id="coach-speak-btn" class="btn btn-sm btn-outline coach-audio-btn" title="한국어 코치 팁을 음성으로 직접 듣기">🎙️ 코치 음성 듣기</button>
+        </div>
         <div id="coach-body-display" class="coach-body">
           'focus on'을 '포커선'처럼 부드럽게 연음하고, 'progress'의 첫 음절에 묵직한 강세를 주어 긍정적인 힘을 실어보세요. 'not' 앞에서 반 박자 쉬어가면 자연스럽습니다.
         </div>
