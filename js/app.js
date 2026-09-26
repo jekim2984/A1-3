@@ -241,8 +241,57 @@ function initTheme() {
   }
 }
 
-// --- 2. Coach Voice Audio Guide ---
+// --- 2. Coach Voice Audio Guide (Dual Voice: Natural Korean + US Native English) ---
 let isCoachSpeaking = false;
+let coachSpeechQueue = [];
+let coachQueueIndex = 0;
+
+function getBestKoreanVoice(voices) {
+  if (!voices || voices.length === 0) return null;
+  const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang.startsWith('ko'));
+  if (koVoices.length === 0) return null;
+  const preferred = koVoices.find(v => 
+    /siri|google|premium|enhanced|natural|yuna/i.test(v.name)
+  );
+  return preferred || koVoices[0];
+}
+
+function getBestEnglishVoice(voices) {
+  if (!voices || voices.length === 0) return null;
+  const enVoices = voices.filter(v => v.lang === 'en-US' || v.lang.startsWith('en'));
+  if (enVoices.length === 0) return null;
+  const preferred = enVoices.find(v => 
+    /siri|google|samantha|alex|ava|allison|tom|natural|enhanced|premium/i.test(v.name)
+  );
+  return preferred || enVoices[0];
+}
+
+function splitTextIntoDualVoiceChunks(text) {
+  // 따옴표로 감싸진 영단어/문장 (예: 'focus on', 'progress', "not") 감지하여 분리
+  const regex = /['"‘“]([a-zA-Z\s\-\.]{2,})['"’”]/g;
+  const chunks = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    const preText = text.substring(lastIndex, match.index);
+    if (preText.trim()) {
+      chunks.push({ text: preText, lang: 'ko' });
+    }
+    const englishTerm = match[1].trim();
+    if (englishTerm) {
+      chunks.push({ text: englishTerm, lang: 'en' });
+    }
+    lastIndex = regex.lastIndex;
+  }
+
+  const remaining = text.substring(lastIndex);
+  if (remaining.trim()) {
+    chunks.push({ text: remaining, lang: 'ko' });
+  }
+
+  return chunks.length > 0 ? chunks : [{ text, lang: 'ko' }];
+}
 
 function initCoachAudioButton() {
   const speakBtn = document.getElementById('coach-speak-btn');
@@ -253,6 +302,8 @@ function initCoachAudioButton() {
 
 function stopCoachSpeech() {
   isCoachSpeaking = false;
+  coachSpeechQueue = [];
+  coachQueueIndex = 0;
   window.speechSynthesis.cancel();
   const speakBtn = document.getElementById('coach-speak-btn');
   if (speakBtn) {
@@ -297,42 +348,94 @@ function toggleCoachAudio() {
   const cleanText = rawText.replace(/^한국어\s*코치\s*:\s*/i, '').trim();
   const script = `슬로파 코치 팁입니다. ${cleanText}`;
 
-  speakKoreanCoachAdvice(script, () => {
-    stopCoachSpeech();
-  });
-
   const speakBtn = document.getElementById('coach-speak-btn');
   if (speakBtn) {
     speakBtn.classList.add('speaking');
     speakBtn.innerHTML = '⏹️ 음성 멈추기';
   }
-  isCoachSpeaking = true;
-  showToast('🎙️ 한국어 코치가 발음 팁을 직접 설명합니다.');
+  showToast('🎙️ 한국어 코치와 원어민 영어 듀얼 음성으로 해설합니다.');
+
+  speakDualVoiceCoachAdvice(script, () => {
+    stopCoachSpeech();
+  });
 }
 
-// Helper to speak Korean text with Korean voice
-function speakKoreanCoachAdvice(text, onComplete) {
+// Helper to speak dual voice (Korean narration + Native English pronunciation)
+function speakDualVoiceCoachAdvice(text, onComplete) {
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ko-KR';
-  utterance.rate = 0.95; // 명확하고 편안한 코칭 속도
+  coachSpeechQueue = splitTextIntoDualVoiceChunks(text);
+  coachQueueIndex = 0;
+  isCoachSpeaking = true;
 
+  playNextCoachSpeechChunk(onComplete);
+}
+
+function playNextCoachSpeechChunk(onComplete) {
+  if (!isCoachSpeaking) return;
+  if (coachQueueIndex >= coachSpeechQueue.length) {
+    stopCoachSpeech();
+    if (typeof onComplete === 'function') onComplete();
+    return;
+  }
+
+  const chunk = coachSpeechQueue[coachQueueIndex];
+  coachQueueIndex++;
+
+  const utterance = new SpeechSynthesisUtterance(chunk.text);
   const voices = window.speechSynthesis.getVoices();
-  const koVoice = voices.find(v => v.lang === 'ko-KR' || v.lang.startsWith('ko'));
-  if (koVoice) {
-    utterance.voice = koVoice;
+
+  if (chunk.lang === 'en') {
+    utterance.lang = 'en-US';
+    utterance.rate = 0.9; // 또렷한 미국 원어민 발음 속도
+    const enVoice = getBestEnglishVoice(voices);
+    if (enVoice) utterance.voice = enVoice;
+  } else {
+    utterance.lang = 'ko-KR';
+    utterance.rate = 0.95; // 편안한 한국어 설명 속도
+    const koVoice = getBestKoreanVoice(voices);
+    if (koVoice) utterance.voice = koVoice;
   }
 
   utterance.onend = () => {
-    if (typeof onComplete === 'function') onComplete();
+    if (!isCoachSpeaking) return;
+    setTimeout(() => {
+      playNextCoachSpeechChunk(onComplete);
+    }, 70);
   };
 
   utterance.onerror = () => {
-    if (typeof onComplete === 'function') onComplete();
+    if (!isCoachSpeaking) return;
+    playNextCoachSpeechChunk(onComplete);
   };
 
   window.speechSynthesis.speak(utterance);
 }
+
+// Single Word Audio Player (0.8x Slow Articulation for Pinpoint Correction)
+window.playSingleWordAudio = function(word) {
+  if (!word || !('speechSynthesis' in window)) return;
+
+  if (typeof stopTrainingRepeat === 'function') stopTrainingRepeat();
+  stopCoachSpeech();
+  if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
+    toggleRadioPlay();
+  }
+
+  const cleanWord = word.replace(/[^a-zA-Z']/g, '').trim();
+  if (!cleanWord) return;
+
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(cleanWord);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.8; // 단어 학습에 최적화된 0.8x 슬로우 속도
+
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = getBestEnglishVoice(voices);
+  if (enVoice) utterance.voice = enVoice;
+
+  showToast(`🔊 '${cleanWord}' 단어 원어민 발음 (0.8x)`);
+  window.speechSynthesis.speak(utterance);
+};
 
 // --- 3. Navigation ---
 function initTrackNavigation() {
@@ -483,11 +586,22 @@ function initTopicControls() {
     });
   });
 
-  // Fetch Next Random Button
+  // Sentence Challenge Counter & Fetch Next Random Button (Fast-Pass)
+  let challengeCount = parseInt(localStorage.getItem('slofa_challenge_count') || '1');
+  const counterBadge = document.getElementById('sentence-challenge-counter');
+  if (counterBadge) {
+    counterBadge.textContent = `${challengeCount}번째`;
+  }
+
   const nextRandomBtn = document.getElementById('fetch-next-random-btn');
   if (nextRandomBtn) {
     nextRandomBtn.addEventListener('click', () => {
-      showToast('🎲 현재 주제의 새로운 긍정 문장을 불러옵니다...');
+      challengeCount++;
+      localStorage.setItem('slofa_challenge_count', challengeCount);
+      if (counterBadge) {
+        counterBadge.textContent = `${challengeCount}번째`;
+      }
+      showToast(`🎲 [오늘 ${challengeCount}번째 문장] 새로운 AI 맞춤 문장으로 도전합니다!`);
       loadDailyLesson('', true);
     });
   }
@@ -717,7 +831,7 @@ function handleSpeechRecognition() {
       `;
     }
 
-    // Render Word Diff Visualizer
+    // Render Word Diff Visualizer with Single Word Pronunciation Audio on Click
     if (diffEl) {
       diffEl.innerHTML = '';
       analysis.wordResults.forEach(item => {
@@ -725,7 +839,10 @@ function handleSpeechRecognition() {
         badge.className = `word-badge word-${item.status}`;
         let statusIcon = item.status === 'pass' ? '🟢' : (item.status === 'warn' ? '🟠' : '🔴');
         badge.innerHTML = `${statusIcon} ${escapeHtml(item.word)}`;
-        badge.title = item.status === 'pass' ? '정확히 발음됨' : (item.status === 'warn' ? '발음 주의/연음 미흡' : '누락되었거나 발음 불일치');
+        badge.title = `클릭하면 '${item.word}' 단어의 0.8x 원어민 발음을 바로 들을 수 있습니다 (${item.status === 'pass' ? '정확' : item.status === 'warn' ? '주의' : '누락'})`;
+        badge.addEventListener('click', () => {
+          playSingleWordAudio(item.word);
+        });
         diffEl.appendChild(badge);
       });
     }
@@ -886,7 +1003,7 @@ function renderDetailCoachingBox(container, analysis, targetSentence) {
       isCoachSpeaking = true;
       showToast('🎙️ 코치가 말하기 진단 결과를 자세히 설명합니다.');
 
-      speakKoreanCoachAdvice(script, () => {
+      speakDualVoiceCoachAdvice(script, () => {
         stopCoachSpeech();
       });
     });
@@ -1037,9 +1154,17 @@ async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false)
       (data.pattern_expansions || []).forEach(pat => {
         const li = document.createElement('li');
         li.className = 'pattern-item';
+        
+        const highlightedPattern = highlightPatternDiff(data.target_sentence, pat);
+
         li.innerHTML = `
-          <span>${escapeHtml(pat)}</span>
-          <button class="btn-icon btn-sm" title="발음 듣기" onclick="speakSentence('${escapeSingleQuotes(pat)}', 1.0)">🔊</button>
+          <div class="pattern-content">
+            <span class="pattern-text">${highlightedPattern}</span>
+          </div>
+          <div class="pattern-item-actions">
+            <button class="btn-icon btn-sm" title="발음 듣기" onclick="speakSentence('${escapeSingleQuotes(pat)}', 1.0)">🔊</button>
+            <button class="btn btn-sm btn-outline-accent" title="이 문장으로 훈련실에서 집중 연습하기" onclick="takePatternToStudio('${escapeSingleQuotes(pat)}')">🔥 이 문장으로 훈련</button>
+          </div>
         `;
         patternList.appendChild(li);
       });
@@ -1372,6 +1497,44 @@ window.takeToStudio = function(sentence) {
   showToast(`🔥 "${sentence}" 문장을 3단 가속 훈련실로 전달했습니다!`);
   loadDailyLesson(sentence);
   switchTrack('track-training');
+};
+
+// Pattern Expansion Helpers: Highlight word differences & Bring to studio
+function highlightPatternDiff(baseSentence, patternSentence) {
+  if (!baseSentence || !patternSentence) return escapeHtml(patternSentence || '');
+
+  // 기본 문장의 알파벳 단어 목록 (소문자 Set)
+  const baseWords = new Set(
+    baseSentence.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length >= 2)
+  );
+
+  // 패턴 문장을 단어와 기호/공백으로 토큰화
+  const tokens = patternSentence.split(/(\s+|[.,!?;:'"“”‘’\(\)])/);
+  return tokens.map(token => {
+    const clean = token.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (clean.length >= 2 && !baseWords.has(clean)) {
+      return `<span class="pattern-highlight">${escapeHtml(token)}</span>`;
+    }
+    return escapeHtml(token);
+  }).join('');
+}
+
+window.takePatternToStudio = function(sentence) {
+  if (!sentence) return;
+
+  stopTrainingRepeat();
+  stopCoachSpeech();
+  if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
+    toggleRadioPlay();
+  }
+
+  showToast('🔥 선택한 응용 문장이 3단 훈련실에 장착되었습니다!');
+  loadDailyLesson(sentence);
+
+  const studioBox = document.querySelector('.studio-box');
+  if (studioBox) {
+    studioBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 };
 
 // --- 9. Dashboard & Archive Stats ---

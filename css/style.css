@@ -599,6 +599,53 @@ body {
   align-items: center;
   justify-content: space-between;
   font-weight: 600;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.pattern-content {
+  flex: 1 1 250px;
+  line-height: 1.5;
+}
+.pattern-highlight {
+  background: rgba(99, 102, 241, 0.14);
+  color: var(--primary);
+  font-weight: 800;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border-bottom: 2px solid var(--primary);
+}
+.pattern-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.btn-outline-accent {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+.btn-outline-accent:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+.challenge-counter-badge {
+  background: rgba(99, 102, 241, 0.18);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+  margin-left: 0.35rem;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Review Decision Box (Smart Fork) */
@@ -948,7 +995,16 @@ body {
   border-radius: var(--radius-sm);
   font-size: 0.95rem;
   font-weight: 700;
-  transition: var(--transition);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.word-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+.word-badge:active {
+  transform: translateY(0);
 }
 .word-badge.word-pass {
   background: rgba(16, 185, 129, 0.15);
