@@ -336,7 +336,9 @@ function initTopicControls() {
     saveTrainingBtn.addEventListener('click', () => {
       const val = trainingInput.value.trim();
       if (!val) {
-        showToast('⚠️ 연습하고 싶은 주제나 관심사를 입력해주세요.');
+        trainingInput.classList.add('input-shake');
+        setTimeout(() => trainingInput.classList.remove('input-shake'), 400);
+        showToast('⚠️ 연습하고 싶은 주제나 관심사를 입력해주세요! (필수값 누락 방지)');
         return;
       }
       SlofaState.trainingTopic = val;
@@ -392,7 +394,9 @@ function initTopicControls() {
     saveRadioBtn.addEventListener('click', () => {
       const val = radioInput.value.trim();
       if (!val) {
-        showToast('⚠️ 라디오로 듣고 싶은 테마를 입력해주세요.');
+        radioInput.classList.add('input-shake');
+        setTimeout(() => radioInput.classList.remove('input-shake'), 400);
+        showToast('⚠️ 라디오로 듣고 싶은 테마를 입력해주세요! (필수값 누락 방지)');
         return;
       }
       SlofaState.radioTopic = val;
@@ -786,7 +790,42 @@ async function triggerAutoLevelEvaluation(accuracy, spoken, target) {
   }
 }
 
-// Fetch Daily Lesson from Backend / API with Client Fallback
+// AI Status Badge & Visual Feedback Updater
+function updateAIStatusBadge(source, customNotice = '') {
+  const headerStatus = document.getElementById('header-ai-status');
+  const headerText = document.getElementById('header-ai-text');
+  const sourceBadge = document.getElementById('sentence-source-badge');
+
+  if (source === 'ai') {
+    if (headerStatus) {
+      headerStatus.className = 'ai-status-indicator live';
+      headerStatus.title = 'Google Gemini 1.5 Flash AI 실시간 연결 완료';
+    }
+    if (headerText) headerText.textContent = '✨ Gemini AI';
+    if (sourceBadge) {
+      sourceBadge.className = 'source-badge live';
+      sourceBadge.textContent = '✨ Gemini 1.5 Flash AI 실시간 생성';
+    }
+    showToast('✨ [Gemini 1.5 Flash] AI가 맞춤 긍정 문장 작문을 완료했습니다!');
+  } else {
+    if (headerStatus) {
+      headerStatus.className = 'ai-status-indicator preset';
+      headerStatus.title = 'API Key 미등록 또는 호출 오류 (스마트 프리셋 모드)';
+    }
+    if (headerText) headerText.textContent = '스마트 모드';
+    if (sourceBadge) {
+      sourceBadge.className = 'source-badge preset';
+      sourceBadge.textContent = '💡 스마트 프리셋';
+    }
+    if (customNotice) {
+      showToast(customNotice);
+    } else {
+      showToast('💡 [안내] Gemini API Key 미설정으로 고품질 내장 데이터로 동작합니다. (Vercel GEMINI_API_KEY 확인)');
+    }
+  }
+}
+
+// Fetch Daily Lesson from Backend / API with Client Fallback & AI Feedback
 async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false) {
   const sentenceEl = document.getElementById('target-sentence-display');
   const meaningEl = document.getElementById('korean-meaning-display');
@@ -794,6 +833,13 @@ async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false)
   const coachTitle = document.getElementById('coach-title-display');
   const coachBody = document.getElementById('coach-body-display');
   const patternList = document.getElementById('pattern-expansion-list');
+  const loadingBar = document.getElementById('ai-loading-indicator');
+
+  // Show Loading Feedback
+  if (loadingBar) loadingBar.style.display = 'flex';
+  const delayTimer = setTimeout(() => {
+    showToast('⏳ Gemini AI 응답이 지연되고 있습니다. 조금만 기다려주세요...');
+  }, 5000);
 
   // Helper to render lesson object
   function renderLesson(data) {
@@ -837,13 +883,24 @@ async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false)
       })
     });
 
+    clearTimeout(delayTimer);
+    if (loadingBar) loadingBar.style.display = 'none';
+
+    if (!res.ok) {
+      throw new Error(`Server returned HTTP ${res.status}`);
+    }
+
     const json = await res.json();
     if (json.success && json.data) {
       renderLesson(json.data);
+      updateAIStatusBadge(json.source, json.notice);
       return;
     }
   } catch (err) {
+    clearTimeout(delayTimer);
+    if (loadingBar) loadingBar.style.display = 'none';
     console.warn('Backend fetch failed, using smart client fallback:', err);
+    updateAIStatusBadge('preset', '⚠️ [API 알림] Gemini API 키 미등록 또는 호출 오류로 내장 스마트 데이터로 즉시 전환되었습니다.');
   }
 
   // 2. Seamless Client Fallback (Zero Freezing)
@@ -980,7 +1037,11 @@ async function fetchRadioAffirmations(appendAI = false) {
     if (json.success && Array.isArray(json.data) && json.data.length > 0) {
       if (appendAI) {
         SlofaState.radioPlaylist = [...SlofaState.reviewQueuedSentences, ...json.data, ...SlofaState.radioPlaylist];
-        showToast('✨ 새로운 긍정 확언들이 라디오 플레이리스트에 추가되었습니다!');
+        if (json.source === 'ai') {
+          showToast('✨ [Gemini AI] 새로운 테마 확언 5문장을 실시간으로 추가했습니다!');
+        } else {
+          showToast('💡 [스마트 프리셋] 고품질 테마 확언이 플레이리스트에 추가되었습니다.');
+        }
       } else {
         SlofaState.radioPlaylist = [...SlofaState.reviewQueuedSentences, ...json.data];
       }
@@ -990,6 +1051,7 @@ async function fetchRadioAffirmations(appendAI = false) {
     }
   } catch (err) {
     console.warn('Radio AI fetch failed, using smart client preset:', err);
+    showToast('⚠️ [라디오 안내] 서버 통신 지연으로 내장 고품질 테마 확언이 로드되었습니다.');
   }
 
   // Client Fallback Preset

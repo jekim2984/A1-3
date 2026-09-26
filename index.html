@@ -21,8 +21,14 @@
         </div>
       </a>
 
-      <!-- Header Controls: Coach Language & Theme -->
+      <!-- Header Controls: Coach Language, AI Status & Theme -->
       <div class="header-actions">
+        <!-- AI Live Status Indicator -->
+        <div id="header-ai-status" class="ai-status-indicator preset" title="Gemini 1.5 Flash 연동 상태">
+          <span class="status-dot"></span>
+          <span id="header-ai-text">스마트 모드</span>
+        </div>
+
         <!-- Coach Language Switch -->
         <div class="coach-lang-toggle" title="선생님 설명 언어 설정">
           <button id="coach-lang-ko" class="coach-lang-btn active">🇰🇷 한국어</button>
@@ -117,11 +123,20 @@
 
       <!-- 3. Slofa Training Studio Hero Box -->
       <div class="studio-box">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em;">
-            🎯 Today's Goal Sentence
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.08em;">
+              🎯 Today's Goal Sentence
+            </div>
+            <span id="sentence-source-badge" class="source-badge preset">💡 스마트 프리셋</span>
           </div>
           <span id="studio-topic-tag" class="topic-tag-mini">🌿 성장과 자신감</span>
+        </div>
+
+        <!-- AI Loading Feedback Bar -->
+        <div id="ai-loading-indicator" class="ai-loading-bar" style="display: none;">
+          <div class="ai-spinner"></div>
+          <span id="ai-loading-text">🤖 Gemini AI가 맞춤 문장을 생성하고 있습니다...</span>
         </div>
         <div id="target-sentence-display" class="target-sentence-hero">I focus on progress, not perfection.</div>
         <div id="korean-meaning-display" class="korean-meaning-hero">나는 완벽함이 아닌 성장에 집중합니다.</div>
