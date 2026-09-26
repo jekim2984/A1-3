@@ -778,14 +778,14 @@ function updateAIStatusBadge(source, customNotice = '') {
   if (source === 'ai') {
     if (headerStatus) {
       headerStatus.className = 'ai-status-indicator live';
-      headerStatus.title = 'Google Gemini 1.5 Flash AI 실시간 연결 완료';
+      headerStatus.title = 'Google Gemini 3.5 Flash-Lite AI 실시간 연결 완료';
     }
     if (headerText) headerText.textContent = '✨ Gemini AI';
     if (sourceBadge) {
       sourceBadge.className = 'source-badge live';
-      sourceBadge.textContent = '✨ Gemini 1.5 Flash AI 실시간 생성';
+      sourceBadge.textContent = '✨ Gemini 3.5 Flash-Lite 실시간 생성';
     }
-    showToast('✨ [Gemini 1.5 Flash] AI가 맞춤 긍정 문장 작문을 완료했습니다!');
+    showToast('✨ [Gemini 3.5 Flash-Lite] AI가 맞춤 긍정 문장 작문을 완료했습니다!');
   } else {
     if (headerStatus) {
       headerStatus.className = 'ai-status-indicator preset';

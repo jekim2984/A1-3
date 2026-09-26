@@ -41,7 +41,7 @@
 
 - **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+, Web Speech API TTS/STT, LocalStorage, Word Diff Engine)
 - **백엔드 (Serverless)**: Python 3.9+ (Vercel Serverless Function `api/slofa.py`)
-- **AI API**: Google Gemini 1.5 Flash (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 100% 무중단 클라이언트/서버 스마트 프리셋(Smart Fallback) 탑재
+- **AI API**: Google Gemini 3.5 Flash-Lite (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 100% 무중단 클라이언트/서버 스마트 프리셋(Smart Fallback) 탑재
 - **배포 플랫폼**: Vercel (GitHub 연동 자동 배포)
 
 ---

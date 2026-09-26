@@ -206,19 +206,28 @@ FALLBACK_RADIO_BY_TOPIC = {
 }
 
 def call_gemini(api_key: str, system_prompt: str, user_prompt: str) -> dict:
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": f"{system_prompt}\n\n[USER]:\n{user_prompt}"}]}],
-        "generationConfig": {"temperature": 0.35, "responseMimeType": "application/json"}
-    }
-    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=12) as response:
-        res = json.loads(response.read().decode("utf-8"))
-        candidates = res.get("candidates", [])
-        if not candidates:
-            raise ValueError("Empty candidate from Gemini")
-        text = candidates[0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+    # Primary model: gemini-3.5-flash-lite with seamless backup
+    models_to_try = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
+    last_err = None
+    for model_name in models_to_try:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": f"{system_prompt}\n\n[USER]:\n{user_prompt}"}]}],
+                "generationConfig": {"temperature": 0.35, "responseMimeType": "application/json"}
+            }
+            req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                candidates = res.get("candidates", [])
+                if not candidates:
+                    raise ValueError(f"Empty candidate from {model_name}")
+                text = candidates[0]["content"]["parts"][0]["text"]
+                return json.loads(text)
+        except Exception as e:
+            last_err = e
+            continue
+    raise last_err or ValueError("Failed to generate content from Gemini API")
 
 def call_openai(api_key: str, system_prompt: str, user_prompt: str) -> dict:
     url = "https://api.openai.com/v1/chat/completions"
