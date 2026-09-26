@@ -219,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initTrackNavigation();
   initTopicControls();
   initLevelSelector();
-  initWarmupCard();
   initTrainingStudio();
   initRadioPlayer();
   initDashboardStats();
@@ -463,27 +462,7 @@ function getLevelName(lvl) {
   return '🌿 Grow (중급)';
 }
 
-// --- 6. Warmup 10s Review Card ---
-function initWarmupCard() {
-  const textEl = document.getElementById('warmup-sentence-text');
-  const listenBtn = document.getElementById('warmup-listen-btn');
-
-  const item = SlofaState.yesterdaySentence || {
-    sentence: "Every step I take builds my future.",
-    meaning: "내가 내딛는 모든 발걸음이 내 미래를 만듭니다."
-  };
-
-  if (textEl) textEl.textContent = `"${item.sentence}"`;
-
-  if (listenBtn) {
-    listenBtn.addEventListener('click', () => {
-      speakSentence(item.sentence, 1.0);
-      showToast('🔊 어제 문장을 1.0배속으로 낭독했습니다! 이제 오늘 진도를 나가볼까요?');
-    });
-  }
-}
-
-// --- 7. Track 1: Training Studio Core ---
+// --- 6. Track 1: Training Studio Core ---
 function initTrainingStudio() {
   initSpeedButtons();
   initActionButtons();

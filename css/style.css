@@ -297,19 +297,7 @@ body {
   box-shadow: var(--shadow-md);
 }
 
-/* Warmup 10s Review Card */
-.warmup-card {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.08));
-  border: 1.5px solid var(--accent-green);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
+/* Review Queued Badge */
 .warmup-badge {
   background: var(--accent-green);
   color: white;
@@ -318,13 +306,6 @@ body {
   font-size: 0.75rem;
   font-weight: 800;
   display: inline-block;
-  margin-bottom: 0.35rem;
-}
-
-.warmup-sentence {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
 }
 
 /* Track 1: Level Indicator & Profile Bar */
@@ -1172,10 +1153,6 @@ body {
   }
   .stats-grid {
     grid-template-columns: 1fr;
-  }
-  .warmup-card {
-    flex-direction: column;
-    align-items: flex-start;
   }
   .track-tabs {
     flex-direction: column;
