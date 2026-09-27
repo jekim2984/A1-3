@@ -630,7 +630,7 @@ function initLevelSelector() {
       SlofaState.level = lvl;
       localStorage.setItem('slofa_level', lvl);
 
-      // 학습자가 우측 레벨 버튼을 직접 누르면 '레벨 직접 고정' 모드로 스마트 자동 전환
+      // 학습자가 우측 레벨 버튼을 직접 누르면 'AI 자동 진단 OFF'로 스마트 전환
       SlofaState.isAutoLevelEnabled = false;
       localStorage.setItem('slofa_auto_level', 'false');
       updateLevelModeToggleUI();
@@ -638,7 +638,7 @@ function initLevelSelector() {
       updateLevelBadge();
       loadDailyLesson();
       refreshRadioPlaylist();
-      showToast(`🔒 레벨이 [${getLevelName(lvl)}]으로 직접 고정되었습니다. (AI 자동 변경 OFF)`);
+      showToast(`레벨이 [${getLevelName(lvl)}]으로 설정되었습니다. (AI 자동 진단 OFF)`);
     });
   });
 
@@ -655,9 +655,9 @@ function initLevelModeToggle() {
       updateLevelModeToggleUI();
 
       if (SlofaState.isAutoLevelEnabled) {
-        showToast('🤖 AI 자동 진단 모드가 켜졌습니다. 낭독 결과에 맞춰 난이도가 스마트하게 맞춰집니다.');
+        showToast('🤖 AI 자동 진단이 켜졌습니다 (ON).');
       } else {
-        showToast(`🔒 [${getLevelName(SlofaState.level)}]으로 직접 고정되었습니다. AI가 레벨을 자동으로 변경하지 않습니다.`);
+        showToast(`🤖 AI 자동 진단이 꺼졌습니다 (OFF). 현재 레벨[${getLevelName(SlofaState.level)}]로 유지됩니다.`);
       }
     });
   }
@@ -671,7 +671,7 @@ function updateLevelModeToggleUI() {
   if (SlofaState.isAutoLevelEnabled) {
     toggleBtn.classList.remove('manual-mode');
     toggleBtn.classList.add('active');
-    toggleBtn.title = '현재: AI 자동 진단 모드 (클릭하면 현재 레벨로 직접 고정)';
+    toggleBtn.title = 'AI 자동 진단: ON (클릭하면 OFF로 끄기)';
     toggleBtn.innerHTML = `
       <span class="mode-icon">🤖</span>
       <span class="mode-text">AI 자동 진단 ON</span>
@@ -680,10 +680,10 @@ function updateLevelModeToggleUI() {
   } else {
     toggleBtn.classList.remove('active');
     toggleBtn.classList.add('manual-mode');
-    toggleBtn.title = '현재: 레벨 직접 고정 모드 (클릭하면 AI 자동 진단 켜기)';
+    toggleBtn.title = 'AI 자동 진단: OFF (클릭하면 ON으로 켜기)';
     toggleBtn.innerHTML = `
-      <span class="mode-icon">🔒</span>
-      <span class="mode-text">레벨 직접 고정</span>
+      <span class="mode-icon">🤖</span>
+      <span class="mode-text">AI 자동 진단 OFF</span>
       <span class="mode-status-dot off"></span>
     `;
   }
@@ -1284,7 +1284,7 @@ async function triggerAutoLevelEvaluation(accuracy, spoken, target) {
               <span style="font-size: 1.3rem;">🩺</span>
               <strong style="font-size: 1rem; color: var(--primary);">Slofa 발화 역량 분석 리포트</strong>
             </div>
-            <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🔒 [${getLevelName(SlofaState.level)}] 직접 고정 중</span>
+            <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🤖 AI 자동 진단 OFF (현재 레벨 유지)</span>
           </div>
           <div class="eval-level-highlight">현재 유지 레벨: ${getLevelName(SlofaState.level)} ${isDifferent ? `<span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(AI 진단 추천: ${d.level_name || getLevelName(recommendedLvl)})</span>` : ''}</div>
           <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
@@ -1364,7 +1364,7 @@ async function triggerAutoLevelEvaluation(accuracy, spoken, target) {
             <span style="font-size: 1.3rem;">🩺</span>
             <strong style="font-size: 1rem; color: var(--primary);">Slofa 발화 역량 분석 리포트</strong>
           </div>
-          <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🔒 [${getLevelName(SlofaState.level)}] 직접 고정 중</span>
+          <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🤖 AI 자동 진단 OFF (현재 레벨 유지)</span>
         </div>
         <div class="eval-level-highlight">현재 유지 레벨: ${getLevelName(SlofaState.level)} ${isDifferent ? `<span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(AI 진단 추천: ${getLevelName(autoLvl)})</span>` : ''}</div>
         <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
