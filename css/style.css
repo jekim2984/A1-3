@@ -567,6 +567,13 @@ body {
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.45) !important;
   animation: pulseDot 1.8s infinite;
 }
+.btn-mic-listening {
+  background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.45) !important;
+  animation: pulseDot 1.5s infinite;
+  border-color: transparent !important;
+}
 .coach-body {
   font-size: 0.95rem;
   color: var(--text-secondary);

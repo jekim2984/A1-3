@@ -335,7 +335,7 @@ Learner's Previous Weak Points (if any): '{weak_points}'.
 Task:
 1. Provide a daily goal sentence matching the theme '{topic}' and level '{level}'. If weak_points exist, gently reinforce those pronunciation/linking elements.
 2. Provide natural Korean translation.
-3. Provide detailed coach advice on rhythm, linking (연음), and stress in {coach_instruction}.
+3. Provide detailed coach advice on rhythm, linking (연음), and stress in {coach_instruction}. (CRITICAL: Do NOT include greetings such as '안녕하세요', '반갑습니다', or introductory lines. Start directly with the core pronunciation and linking advice!)
 4. Provide rhythm stress guide (e.g. I FO-cus on PRO-gress).
 5. Provide 3 pattern expansion sentences that substitute core words.
 
@@ -343,7 +343,7 @@ Return ONLY valid JSON:
 {{
   "target_sentence": "English goal sentence",
   "korean_meaning": "한국어 번역",
-  "coach_advice": "Detailed rhythm and pronunciation advice tailored to learner",
+  "coach_advice": "Detailed rhythm and pronunciation advice tailored to learner (NO greeting words)",
   "rhythm_tips": "STRESS-marked rhythm guide",
   "pattern_expansions": [
     "Expanded sentence 1",

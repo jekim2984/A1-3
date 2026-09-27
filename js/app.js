@@ -246,6 +246,11 @@ let isCoachSpeaking = false;
 let coachSpeechQueue = [];
 let coachQueueIndex = 0;
 
+// Speech Recognition (Mic Diagnosis) State
+let currentSpeechRecognition = null;
+let isSpeechRecognizing = false;
+let speechRecognitionTimeout = null;
+
 function getBestKoreanVoice(voices) {
   if (!voices || voices.length === 0) return null;
   const koVoices = voices.filter(v => v.lang === 'ko-KR' || v.lang.startsWith('ko'));
@@ -329,8 +334,9 @@ function toggleCoachAudio() {
     return;
   }
 
-  // 중복 재생 방지 (반복 훈련 및 라디오 정지)
+  // 중복 재생 방지 (반복 훈련, 라디오 및 마이크 정밀 진단 정지)
   if (typeof stopTrainingRepeat === 'function') stopTrainingRepeat();
+  if (typeof stopSpeechRecognition === 'function') stopSpeechRecognition();
   if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') toggleRadioPlay();
 
   const coachBody = document.getElementById('coach-body-display');
@@ -344,16 +350,20 @@ function toggleCoachAudio() {
     return;
   }
 
-  // 안내 멘트 정제
-  const cleanText = rawText.replace(/^한국어\s*코치\s*:\s*/i, '').trim();
-  const script = `슬로파 코치 팁입니다. ${cleanText}`;
+  // 안내 멘트 정제: '한국어 코치:', '안녕하세요', '반갑습니다', '슬로파 코치입니다' 등 인사말 제거 (반복 청취 최적화)
+  let cleanText = rawText.replace(/^한국어\s*코치\s*:\s*/i, '').trim();
+  cleanText = cleanText.replace(/^(안녕하세요[!,.~^]*|반갑습니다[!,.~^]*|슬로파\s*코치입니다[!,.~^]*)\s*/gi, '').trim();
+  cleanText = cleanText.replace(/^(안녕하세요[!,.~^]*|반갑습니다[!,.~^]*)\s*/gi, '').trim();
+
+  // 불필요한 서두 멘트 없이 곧바로 핵심 팁 본문 재생
+  const script = cleanText;
 
   const speakBtn = document.getElementById('coach-speak-btn');
   if (speakBtn) {
     speakBtn.classList.add('speaking');
     speakBtn.innerHTML = '⏹️ 음성 멈추기';
   }
-  showToast('🎙️ 한국어 코치와 원어민 영어 듀얼 음성으로 해설합니다.');
+  showToast('🎙️ 코치 원포인트 해설을 재생합니다.');
 
   speakDualVoiceCoachAdvice(script, () => {
     stopCoachSpeech();
@@ -715,8 +725,11 @@ function toggleTrainingRepeat() {
     return;
   }
 
-  // 코치 음성이나 라디오가 재생 중이면 중지
+  // 코치 음성, 마이크 진단 또는 라디오가 재생 중이면 중지
   stopCoachSpeech();
+  if (typeof stopSpeechRecognition === 'function') {
+    stopSpeechRecognition();
+  }
   if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
     toggleRadioPlay();
   }
@@ -770,19 +783,60 @@ function initActionButtons() {
   }
 
   if (micBtn) {
-    micBtn.addEventListener('click', () => {
-      // 마이크 진단 시 다른 음성 모두 정지
-      stopTrainingRepeat();
-      stopCoachSpeech();
-      handleSpeechRecognition();
-    });
+    micBtn.addEventListener('click', handleSpeechRecognitionToggle);
   }
 }
 
-// --- STT Speech Recognition with Word Diff Visualizer & Detail Coaching ---
-function handleSpeechRecognition() {
+// --- STT Speech Recognition with Word Diff Visualizer, Safety Timeout & Instant Toggle ---
+function stopSpeechRecognition(userCancelled = false) {
+  if (speechRecognitionTimeout) {
+    clearTimeout(speechRecognitionTimeout);
+    speechRecognitionTimeout = null;
+  }
+
+  isSpeechRecognizing = false;
+
+  if (currentSpeechRecognition) {
+    const rec = currentSpeechRecognition;
+    currentSpeechRecognition = null;
+    try {
+      rec.abort();
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const micBtn = document.getElementById('studio-mic-btn');
+  if (micBtn) {
+    micBtn.classList.remove('btn-mic-listening');
+    micBtn.innerHTML = '🎙️ 소리 내어 말해보기 (정밀 진단)';
+  }
+
+  if (userCancelled) {
+    const statusEl = document.getElementById('speech-result-status');
+    if (statusEl) {
+      statusEl.innerHTML = '<span style="color: var(--text-muted); font-size: 0.9rem;">⏹️ 음성 진단을 멈췄습니다. 다시 말해보려면 버튼을 눌러주세요.</span>';
+    }
+    showToast('음성 진단을 중지했습니다.');
+  }
+}
+
+function handleSpeechRecognitionToggle() {
+  if (isSpeechRecognizing) {
+    stopSpeechRecognition(true);
+    return;
+  }
+  startSpeechRecognition();
+}
+
+function startSpeechRecognition() {
+  // 이전 인식 및 오디오 재생 모두 정지
+  stopSpeechRecognition();
   stopTrainingRepeat();
   stopCoachSpeech();
+  if (SlofaState.isRadioPlaying && typeof toggleRadioPlay === 'function') {
+    toggleRadioPlay();
+  }
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const panel = document.getElementById('speech-test-panel');
@@ -790,24 +844,81 @@ function handleSpeechRecognition() {
   const diffEl = document.getElementById('speech-word-diff');
   const detailBox = document.getElementById('speech-detail-box');
   const evalCard = document.getElementById('auto-eval-card');
+  const micBtn = document.getElementById('studio-mic-btn');
 
   if (!SpeechRecognition) {
     showToast('⚠️ 현재 브라우저는 마이크 음성 인식을 지원하지 않습니다. (크롬 권장)');
     return;
   }
 
-  const recognition = new SpeechRecognition();
+  let recognition;
+  try {
+    recognition = new SpeechRecognition();
+  } catch (err) {
+    showToast('⚠️ 음성 인식 엔진을 초기화할 수 없습니다.');
+    return;
+  }
+
   recognition.lang = 'en-US';
   recognition.interimResults = false;
   recognition.maxAlternatives = 1;
 
   if (panel) panel.style.display = 'block';
-  if (statusEl) statusEl.innerHTML = '<span class="mic-active-pulse">🎙️ 듣고 있습니다... 문장을 자신 있게 낭독하세요!</span>';
-  if (diffEl) diffEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">음성 인식 중...</div>';
+  if (statusEl) {
+    statusEl.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <span class="mic-active-pulse">🎙️ 듣고 있습니다... 문장을 자신 있게 낭독하세요!</span>
+        <button id="cancel-mic-inline-btn" class="btn btn-sm btn-outline" style="padding: 2px 8px; font-size: 0.8rem; border-color: #ef4444; color: #ef4444;" title="음성 인식 즉시 취소">⏹️ 멈추기</button>
+      </div>
+    `;
+    const inlineCancel = document.getElementById('cancel-mic-inline-btn');
+    if (inlineCancel) {
+      inlineCancel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        stopSpeechRecognition(true);
+      });
+    }
+  }
+  if (diffEl) diffEl.innerHTML = '<div style="color: var(--text-muted); font-size: 0.9rem;">마이크로 발화를 감지하고 있습니다... (말씀이 끝나면 자동으로 분석됩니다)</div>';
   if (detailBox) detailBox.innerHTML = '';
   if (evalCard) evalCard.style.display = 'none';
 
+  if (micBtn) {
+    micBtn.classList.add('btn-mic-listening');
+    micBtn.innerHTML = '⏹️ 진단 멈추기 (다시 클릭)';
+  }
+
+  isSpeechRecognizing = true;
+  currentSpeechRecognition = recognition;
+
+  // 8초 안전 타임아웃 (서버 응답 지연이나 무음 대기 방지)
+  speechRecognitionTimeout = setTimeout(() => {
+    if (isSpeechRecognizing) {
+      stopSpeechRecognition(false);
+      if (statusEl) {
+        statusEl.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <span style="color: var(--warning, #f59e0b); font-size: 0.9rem;">⏱️ 음성 인식 대기 시간이 초과되었습니다.</span>
+            <button id="retry-mic-btn" class="btn btn-sm btn-primary" style="padding: 2px 10px; font-size: 0.8rem;">🔄 바로 다시 시도</button>
+          </div>
+        `;
+        const retryBtn = document.getElementById('retry-mic-btn');
+        if (retryBtn) {
+          retryBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startSpeechRecognition();
+          });
+        }
+      }
+      showToast('⏱️ 응답 지연으로 대기를 멈췄습니다. [다시 시도]를 눌러보세요.');
+    }
+  }, 8000);
+
   recognition.onresult = (event) => {
+    if (speechRecognitionTimeout) {
+      clearTimeout(speechRecognitionTimeout);
+      speechRecognitionTimeout = null;
+    }
     const spoken = event.results[0][0].transcript;
     const target = SlofaState.currentLesson ? SlofaState.currentLesson.target_sentence : '';
     
@@ -824,7 +935,7 @@ function handleSpeechRecognition() {
     if (statusEl) {
       let icon = analysis.accuracy >= 80 ? '🎉' : (analysis.accuracy >= 50 ? '👍' : '💪');
       statusEl.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
           <span>${icon} 발화 일치도: <strong style="color: var(--primary); font-size: 1.2rem;">${analysis.accuracy}%</strong></span>
           <span style="font-size: 0.85rem; color: var(--text-muted);">인식된 음성: "${escapeHtml(spoken)}"</span>
         </div>
@@ -854,15 +965,68 @@ function handleSpeechRecognition() {
 
     // Trigger Stealth Auto Level Evaluation
     triggerAutoLevelEvaluation(analysis.accuracy, spoken, target);
+
+    // 인식 완료 후 마이크 상태 정상화
+    stopSpeechRecognition(false);
   };
 
   recognition.onerror = (event) => {
+    if (speechRecognitionTimeout) {
+      clearTimeout(speechRecognitionTimeout);
+      speechRecognitionTimeout = null;
+    }
+
+    if (event.error === 'aborted') {
+      // 사용자가 직접 취소한 경우는 에러 안내 생략
+      return;
+    }
+
+    let errorMsg = '음성 인식 중 오류가 발생했습니다.';
+    if (event.error === 'no-speech') {
+      errorMsg = '목소리가 감지되지 않았습니다. 마이크에 가까이 대고 조금 더 또렷하게 말씀해 주세요.';
+    } else if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+      errorMsg = '마이크 접근 권한이 차단되었습니다. 브라우저 주소창 좌측 자물쇠 아이콘에서 마이크를 허용해주세요.';
+    } else if (event.error === 'network') {
+      errorMsg = '네트워크 연결이 불안정하여 음성 인식 서버에 접속하지 못했습니다.';
+    }
+
     if (statusEl) {
-      statusEl.textContent = '음성 인식 시간이 초과되었거나 마이크 접근 권한이 없습니다. 마이크 허용 후 다시 시도해주세요.';
+      statusEl.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <span style="color: var(--danger, #ef4444); font-size: 0.9rem;">⚠️ ${errorMsg}</span>
+          <button id="retry-mic-err-btn" class="btn btn-sm btn-primary" style="padding: 2px 10px; font-size: 0.8rem;">🔄 다시 시도</button>
+        </div>
+      `;
+      const retryBtn = document.getElementById('retry-mic-err-btn');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          startSpeechRecognition();
+        });
+      }
+    }
+
+    stopSpeechRecognition(false);
+  };
+
+  recognition.onend = () => {
+    if (isSpeechRecognizing) {
+      stopSpeechRecognition(false);
     }
   };
 
-  recognition.start();
+  try {
+    recognition.start();
+  } catch (err) {
+    console.error('Speech recognition start failed:', err);
+    stopSpeechRecognition(false);
+    showToast('⚠️ 마이크를 시작할 수 없습니다. 잠시 후 다시 시도해 주세요.');
+  }
+}
+
+// 하위 호환성을 위한 alias
+function handleSpeechRecognition() {
+  handleSpeechRecognitionToggle();
 }
 
 // Word Diff Matching Algorithm
@@ -1419,9 +1583,12 @@ function toggleRadioPlay() {
   const wave = document.getElementById('radio-visualizer-wave');
 
   if (SlofaState.isRadioPlaying) {
-    // 훈련실 반복 재생 및 코치 음성 중지
+    // 훈련실 반복 재생, 마이크 진단 및 코치 음성 중지
     stopTrainingRepeat();
     stopCoachSpeech();
+    if (typeof stopSpeechRecognition === 'function') {
+      stopSpeechRecognition();
+    }
 
     if (masterBtn) masterBtn.textContent = '⏸️';
     if (wave) wave.classList.add('playing');
@@ -1590,6 +1757,9 @@ function initGuideFaq() {
 
 // --- Speech Synthesis Helper ---
 window.speakSentence = function(text, rate = 1.0) {
+  if (typeof stopSpeechRecognition === 'function') {
+    stopSpeechRecognition();
+  }
   if (!('speechSynthesis' in window)) {
     showToast('이 브라우저는 음성 합성을 지원하지 않습니다.');
     return;
