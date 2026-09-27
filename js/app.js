@@ -17,6 +17,7 @@
 const SlofaState = {
   theme: localStorage.getItem('slofa_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   level: localStorage.getItem('slofa_level') || 'grow',
+  isAutoLevelEnabled: localStorage.getItem('slofa_auto_level') !== 'false',
   coachLang: localStorage.getItem('slofa_coach_lang') || 'ko',
   
   // Custom Topics with Smart Persistence
@@ -617,7 +618,7 @@ function initTopicControls() {
   }
 }
 
-// --- 5. Level Selector & Stealth Indicator ---
+// --- 5. Level Selector & Adaptive Mode Controller ---
 function initLevelSelector() {
   const levelBtns = document.querySelectorAll('.level-pill-btn');
   levelBtns.forEach(btn => {
@@ -628,13 +629,64 @@ function initLevelSelector() {
       btn.classList.add('active');
       SlofaState.level = lvl;
       localStorage.setItem('slofa_level', lvl);
+
+      // 학습자가 우측 레벨 버튼을 직접 누르면 '레벨 직접 고정' 모드로 스마트 자동 전환
+      SlofaState.isAutoLevelEnabled = false;
+      localStorage.setItem('slofa_auto_level', 'false');
+      updateLevelModeToggleUI();
+
       updateLevelBadge();
       loadDailyLesson();
       refreshRadioPlaylist();
-      showToast(`레벨이 [${getLevelName(lvl)}]으로 설정되었습니다.`);
+      showToast(`🔒 레벨이 [${getLevelName(lvl)}]으로 직접 고정되었습니다. (AI 자동 변경 OFF)`);
     });
   });
+
+  initLevelModeToggle();
   updateLevelBadge();
+}
+
+function initLevelModeToggle() {
+  const toggleBtn = document.getElementById('level-mode-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      SlofaState.isAutoLevelEnabled = !SlofaState.isAutoLevelEnabled;
+      localStorage.setItem('slofa_auto_level', SlofaState.isAutoLevelEnabled ? 'true' : 'false');
+      updateLevelModeToggleUI();
+
+      if (SlofaState.isAutoLevelEnabled) {
+        showToast('🤖 AI 자동 진단 모드가 켜졌습니다. 낭독 결과에 맞춰 난이도가 스마트하게 맞춰집니다.');
+      } else {
+        showToast(`🔒 [${getLevelName(SlofaState.level)}]으로 직접 고정되었습니다. AI가 레벨을 자동으로 변경하지 않습니다.`);
+      }
+    });
+  }
+  updateLevelModeToggleUI();
+}
+
+function updateLevelModeToggleUI() {
+  const toggleBtn = document.getElementById('level-mode-toggle-btn');
+  if (!toggleBtn) return;
+
+  if (SlofaState.isAutoLevelEnabled) {
+    toggleBtn.classList.remove('manual-mode');
+    toggleBtn.classList.add('active');
+    toggleBtn.title = '현재: AI 자동 진단 모드 (클릭하면 현재 레벨로 직접 고정)';
+    toggleBtn.innerHTML = `
+      <span class="mode-icon">🤖</span>
+      <span class="mode-text">AI 자동 진단 ON</span>
+      <span class="mode-status-dot on"></span>
+    `;
+  } else {
+    toggleBtn.classList.remove('active');
+    toggleBtn.classList.add('manual-mode');
+    toggleBtn.title = '현재: 레벨 직접 고정 모드 (클릭하면 AI 자동 진단 켜기)';
+    toggleBtn.innerHTML = `
+      <span class="mode-icon">🔒</span>
+      <span class="mode-text">레벨 직접 고정</span>
+      <span class="mode-status-dot off"></span>
+    `;
+  }
 }
 
 function updateLevelBadge() {
@@ -1198,24 +1250,76 @@ async function triggerAutoLevelEvaluation(accuracy, spoken, target) {
     const json = await res.json();
     if (json.success && json.data) {
       const d = json.data;
-      // Auto-assign new level if appropriate
-      if (d.assigned_level && d.assigned_level !== SlofaState.level) {
-        SlofaState.level = d.assigned_level;
-        localStorage.setItem('slofa_level', d.assigned_level);
-        updateLevelBadge();
-      }
+      const recommendedLvl = d.assigned_level || SlofaState.level;
 
-      evalCard.style.display = 'block';
-      evalCard.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-          <span style="font-size: 1.3rem;">🤖</span>
-          <strong style="font-size: 1rem; color: var(--primary);">Slofa 미션 수행 분석 완료</strong>
-        </div>
-        <div class="eval-level-highlight">추천 최적 레벨: ${d.level_name || getLevelName(SlofaState.level)}</div>
-        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
-          ${escapeHtml(d.summary)}
-        </p>
-      `;
+      if (SlofaState.isAutoLevelEnabled) {
+        // [1] AI 자동 진단 모드 ON: 레벨 자동 배정
+        if (d.assigned_level && d.assigned_level !== SlofaState.level) {
+          SlofaState.level = d.assigned_level;
+          localStorage.setItem('slofa_level', d.assigned_level);
+          updateLevelBadge();
+        }
+
+        evalCard.style.display = 'block';
+        evalCard.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.3rem;">🤖</span>
+              <strong style="font-size: 1rem; color: var(--primary);">Slofa 미션 수행 분석 완료</strong>
+            </div>
+            <span class="stealth-badge" style="font-size: 0.75rem;">🤖 자동 배정 반영</span>
+          </div>
+          <div class="eval-level-highlight">추천 배정 레벨: ${d.level_name || getLevelName(SlofaState.level)}</div>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
+            ${escapeHtml(d.summary)}
+          </p>
+        `;
+      } else {
+        // [2] 직접 지정 모드 OFF: 현재 선택한 레벨 강제 변경 없이 유지 & 선택형 제안
+        const isDifferent = recommendedLvl !== SlofaState.level;
+        evalCard.style.display = 'block';
+        evalCard.innerHTML = `
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 1.3rem;">🩺</span>
+              <strong style="font-size: 1rem; color: var(--primary);">Slofa 발화 역량 분석 리포트</strong>
+            </div>
+            <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🔒 [${getLevelName(SlofaState.level)}] 직접 고정 중</span>
+          </div>
+          <div class="eval-level-highlight">현재 유지 레벨: ${getLevelName(SlofaState.level)} ${isDifferent ? `<span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(AI 진단 추천: ${d.level_name || getLevelName(recommendedLvl)})</span>` : ''}</div>
+          <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
+            ${escapeHtml(d.summary)}
+          </p>
+          ${isDifferent ? `
+            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <button id="apply-ai-level-btn" class="btn btn-sm btn-primary" style="font-size: 0.82rem;">🚀 AI 추천 레벨(${getLevelName(recommendedLvl)})로 지금 변경하기</button>
+              <button id="keep-current-level-btn" class="btn btn-sm btn-secondary" style="font-size: 0.82rem;">🔒 현재 레벨 계속 유지</button>
+            </div>
+          ` : ''}
+        `;
+
+        if (isDifferent) {
+          const applyBtn = document.getElementById('apply-ai-level-btn');
+          if (applyBtn) {
+            applyBtn.addEventListener('click', () => {
+              SlofaState.level = recommendedLvl;
+              localStorage.setItem('slofa_level', recommendedLvl);
+              updateLevelBadge();
+              loadDailyLesson();
+              refreshRadioPlaylist();
+              showToast(`🎉 레벨이 [${getLevelName(recommendedLvl)}]로 변경되었습니다.`);
+              evalCard.style.display = 'none';
+            });
+          }
+          const keepBtn = document.getElementById('keep-current-level-btn');
+          if (keepBtn) {
+            keepBtn.addEventListener('click', () => {
+              showToast(`🔒 현재 레벨 [${getLevelName(SlofaState.level)}]이 그대로 유지됩니다.`);
+              evalCard.style.display = 'none';
+            });
+          }
+        }
+      }
     }
   } catch (err) {
     // Client fallback evaluation
@@ -1223,30 +1327,79 @@ async function triggerAutoLevelEvaluation(accuracy, spoken, target) {
     let summary = '';
     if (accuracy >= 85 && speeds.includes(1.2)) {
       autoLvl = 'bloom';
-      summary = `1.2배속 초고속 발화에서도 일치도 ${accuracy}%를 기록하며 뛰어난 순발력을 보여주셨습니다! 내일부터는 가장 깊이 있는 Bloom(고급) 레벨로 자동 상향 배정되었습니다.`;
+      summary = `1.2배속 초고속 발화에서도 일치도 ${accuracy}%를 기록하며 뛰어난 순발력을 보여주셨습니다!`;
     } else if (accuracy >= 60) {
       autoLvl = 'grow';
-      summary = `표준 속도에서 일치도 ${accuracy}%로 균형 잡힌 호흡을 보여주셨습니다. 현재 가장 알맞은 Grow(중급) 레벨로 최적 배정되었습니다.`;
+      summary = `표준 속도에서 일치도 ${accuracy}%로 균형 잡힌 호흡을 보여주셨습니다. 현재 가장 알맞은 단계입니다.`;
     } else {
       autoLvl = 'seed';
-      summary = `편안하게 소파에 기대어 연음을 귀에 익힐 수 있도록 부담 없는 Seed(초급) 레벨로 설정되었습니다.`;
+      summary = `편안하게 소파에 기대어 연음을 귀에 익힐 수 있도록 부담 없는 단계입니다.`;
     }
 
-    SlofaState.level = autoLvl;
-    localStorage.setItem('slofa_level', autoLvl);
-    updateLevelBadge();
-
     evalCard.style.display = 'block';
-    evalCard.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-        <span style="font-size: 1.3rem;">🤖</span>
-        <strong style="font-size: 1rem; color: var(--primary);">Slofa 미션 수행 분석 완료</strong>
-      </div>
-      <div class="eval-level-highlight">현재 배정 레벨: ${getLevelName(autoLvl)}</div>
-      <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
-        ${summary}
-      </p>
-    `;
+
+    if (SlofaState.isAutoLevelEnabled) {
+      SlofaState.level = autoLvl;
+      localStorage.setItem('slofa_level', autoLvl);
+      updateLevelBadge();
+
+      evalCard.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.3rem;">🤖</span>
+            <strong style="font-size: 1rem; color: var(--primary);">Slofa 미션 수행 분석 완료</strong>
+          </div>
+          <span class="stealth-badge" style="font-size: 0.75rem;">🤖 자동 배정 반영</span>
+        </div>
+        <div class="eval-level-highlight">현재 배정 레벨: ${getLevelName(autoLvl)}</div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
+          ${summary}
+        </p>
+      `;
+    } else {
+      const isDifferent = autoLvl !== SlofaState.level;
+      evalCard.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.4rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <span style="font-size: 1.3rem;">🩺</span>
+            <strong style="font-size: 1rem; color: var(--primary);">Slofa 발화 역량 분석 리포트</strong>
+          </div>
+          <span class="stealth-badge manual-mode" style="font-size: 0.75rem;">🔒 [${getLevelName(SlofaState.level)}] 직접 고정 중</span>
+        </div>
+        <div class="eval-level-highlight">현재 유지 레벨: ${getLevelName(SlofaState.level)} ${isDifferent ? `<span style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted);">(AI 진단 추천: ${getLevelName(autoLvl)})</span>` : ''}</div>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; margin-top: 0.4rem;">
+          ${summary}
+        </p>
+        ${isDifferent ? `
+          <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button id="apply-ai-fallback-lvl-btn" class="btn btn-sm btn-primary" style="font-size: 0.82rem;">🚀 추천 레벨(${getLevelName(autoLvl)})로 지금 변경하기</button>
+            <button id="keep-current-fallback-lvl-btn" class="btn btn-sm btn-secondary" style="font-size: 0.82rem;">🔒 현재 레벨 계속 유지</button>
+          </div>
+        ` : ''}
+      `;
+
+      if (isDifferent) {
+        const applyBtn = document.getElementById('apply-ai-fallback-lvl-btn');
+        if (applyBtn) {
+          applyBtn.addEventListener('click', () => {
+            SlofaState.level = autoLvl;
+            localStorage.setItem('slofa_level', autoLvl);
+            updateLevelBadge();
+            loadDailyLesson();
+            refreshRadioPlaylist();
+            showToast(`🎉 레벨이 [${getLevelName(autoLvl)}]로 변경되었습니다.`);
+            evalCard.style.display = 'none';
+          });
+        }
+        const keepBtn = document.getElementById('keep-current-fallback-lvl-btn');
+        if (keepBtn) {
+          keepBtn.addEventListener('click', () => {
+            showToast(`🔒 현재 레벨 [${getLevelName(SlofaState.level)}]이 그대로 유지됩니다.`);
+            evalCard.style.display = 'none';
+          });
+        }
+      }
+    }
   }
 }
 

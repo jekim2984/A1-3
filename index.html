@@ -93,7 +93,11 @@
         <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
           <span style="font-weight: 700; font-size: 0.95rem;">내 수준:</span>
           <span id="current-level-badge" class="level-tag">🌿 Grow (중급)</span>
-          <span class="stealth-badge" title="별도 시험 없이 오늘 훈련을 수행하면 AI가 수준을 자동 평가합니다">🤖 미션 기반 자동 진단 중</span>
+          <button id="level-mode-toggle-btn" class="stealth-badge stealth-toggle-btn active" title="클릭하면 AI 자동 진단과 레벨 직접 고정 모드를 전환합니다">
+            <span class="mode-icon">🤖</span>
+            <span class="mode-text">AI 자동 진단 ON</span>
+            <span class="mode-status-dot on"></span>
+          </button>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
           <button id="fetch-next-random-btn" class="btn btn-sm btn-secondary" title="새로운 AI 맞춤 긍정 문장으로 무제한 도전하기">🎲 새로운 문장 도전 <span id="sentence-challenge-counter" class="challenge-counter-badge">1번째</span></button>
