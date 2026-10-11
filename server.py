@@ -13,6 +13,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from api.slofa import handler as SlofaHandler
 
 class DevServerHandler(http.server.SimpleHTTPRequestHandler):
+    _send_json = SlofaHandler._send_json
+    _handle_level_eval_ai = SlofaHandler._handle_level_eval_ai
+    _handle_level_eval_fallback = SlofaHandler._handle_level_eval_fallback
+
     def do_POST(self):
         if self.path.startswith('/api/slofa'):
             # Delegate to SlofaHandler
@@ -44,3 +48,4 @@ def run(port=8000):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8000))
     run(port)
+
