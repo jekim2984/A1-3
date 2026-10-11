@@ -237,9 +237,10 @@
         <div class="topic-quick-tags">
           <span style="font-size: 0.8rem; color: var(--text-muted); align-self: center;">추천 테마:</span>
           <button class="tag-pill radio-tag" data-topic="평온과 마인드 힐링 (Calm & Healing)">#차분한힐링</button>
-          <button class="tag-pill radio-tag" data-topic="활기찬 아침 긍정 에너지 (Morning Energy)">#모닝에너지</button>
-          <button class="tag-pill radio-tag" data-topic="성장과 흔들리지 않는 용기 (Courage & Resilience)">#자신감&용기</button>
-          <button class="tag-pill radio-tag" data-topic="퇴근 후 나를 위한 쉼 (Rest & Peace)">#퇴근길BGM</button>
+          <button class="tag-pill radio-tag" data-topic="성장과 흔들리지 않는 용기 (Courage & Resilience)">#자신감&성장</button>
+          <button class="tag-pill radio-tag" data-topic="자연스러운 일상 영어 (Daily Conversation)">#일상회화</button>
+          <button class="tag-pill radio-tag" data-topic="프로페셔널 비즈니스 회화 (Business & Workplace)">#비즈니스</button>
+          <button class="tag-pill radio-tag" data-topic="설레는 해외여행과 공항 회화 (Travel & Adventure)">#여행&공항</button>
         </div>
       </div>
 
@@ -250,7 +251,7 @@
           <span id="radio-theme-indicator" style="margin-left: 0.5rem; opacity: 0.9; font-weight: 600;">[🧘 평온과 힐링]</span>
         </div>
         <div id="radio-current-sentence" class="radio-current-sentence">I focus on progress, not perfection.</div>
-        <div id="radio-current-meaning" class="radio-current-meaning">나는 완벽함이 아닌 성장에 집중합니다.</div>
+        <div id="radio-current-meaning" class="radio-current-meaning" style="display: none;"></div>
 
         <!-- Big Play Button -->
         <button id="master-radio-play-btn" class="master-play-btn" aria-label="라디오 재생/일시정지">▶️</button>
@@ -262,13 +263,22 @@
           <button id="radio-next-btn" class="btn-icon" title="다음 문장">⏭️</button>
         </div>
 
-        <!-- Radio Speed Selector (0.8x / 1.0x / 1.2x) -->
-        <div class="radio-speed-selector">
-          <span class="speed-pill-label">🎚️ 리스닝 속도:</span>
-          <div class="radio-speed-btns">
-            <button class="radio-speed-btn" data-speed="0.8">🐢 0.8x Slo</button>
-            <button class="radio-speed-btn active" data-speed="1.0">🚶 1.0x Natural</button>
-            <button class="radio-speed-btn" data-speed="1.2">🏎️ 1.2x Fast</button>
+        <!-- Radio Speed Selector (0.8x / 1.0x / 1.2x) & Repeat Selector (1회 / 2회) -->
+        <div class="radio-settings-grid">
+          <div class="radio-speed-selector">
+            <span class="speed-pill-label">🎚️ 리스닝 속도:</span>
+            <div class="radio-speed-btns">
+              <button class="radio-speed-btn" data-speed="0.8">🐢 0.8x Slo</button>
+              <button class="radio-speed-btn" data-speed="1.0">🚶 1.0x Natural</button>
+              <button class="radio-speed-btn" data-speed="1.2">🏎️ 1.2x Fast</button>
+            </div>
+          </div>
+          <div class="radio-repeat-selector">
+            <span class="speed-pill-label">🔁 문장 반복:</span>
+            <div class="radio-repeat-btns">
+              <button class="radio-repeat-btn" data-repeat="1">🔂 1회씩 듣기</button>
+              <button class="radio-repeat-btn" data-repeat="2">🔁 2회씩 반복</button>
+            </div>
           </div>
         </div>
 

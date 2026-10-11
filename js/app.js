@@ -39,6 +39,8 @@ const SlofaState = {
 
   // Radio Player State
   radioSpeed: parseFloat(localStorage.getItem('slofa_radio_speed') || '1.0'),
+  radioRepeatCount: parseInt(localStorage.getItem('slofa_radio_repeat') || '1'),
+  radioRepeatProgress: 0,
   radioPlaylist: [],
   radioIndex: 0,
   isRadioPlaying: false,
@@ -210,8 +212,86 @@ const CLIENT_TOPIC_RADIO = {
       { sentence: "I allow each moment to unfold with grace, patience, and acceptance.", meaning: "우아함과 인내, 수용의 마음으로 매 순간이 자연스레 펼쳐지게 둡니다." },
       { sentence: "Releasing attachment to outcomes liberates my authentic creative energy.", meaning: "결과에 대한 집착을 내려놓음으로써 나의 진정한 창조적 에너지를 해방합니다." }
     ]
+  },
+  daily: {
+    seed: [
+      { sentence: "Good morning, today is going to be a great day.", meaning: "좋은 아침이에요, 오늘은 멋진 날이 될 거예요." },
+      { sentence: "I enjoy simple moments and friendly smiles.", meaning: "소소한 순간들과 다정한 미소를 즐깁니다." },
+      { sentence: "Can I get a warm cup of coffee, please?", meaning: "따뜻한 커피 한 잔 부탁드려도 될까요?" },
+      { sentence: "It feels so refreshing to take a gentle walk.", meaning: "가볍게 산책하니 기분이 참 상쾌해요." },
+      { sentence: "Thank you for making my day brighter.", meaning: "오늘 하루를 더 밝게 만들어주셔서 감사합니다." }
+    ],
+    grow: [
+      { sentence: "I can handle whatever today brings with a smile.", meaning: "오늘 어떤 일이 찾아와도 미소로 맞이할 수 있습니다." },
+      { sentence: "Could you recommend a quiet place around here?", meaning: "이 근처에 조용하고 편안한 곳을 추천해 주시겠어요?" },
+      { sentence: "Small polite words make everyday conversations pleasant.", meaning: "정중한 한마디가 일상 대화를 기분 좋게 만듭니다." },
+      { sentence: "I feel comfortable expressing my thoughts naturally.", meaning: "내 생각을 자연스럽게 표현하는 것이 편안합니다." },
+      { sentence: "Everyday conversations are wonderful chances to connect.", meaning: "일상의 대화는 소통을 잇는 멋진 기회입니다." }
+    ],
+    bloom: [
+      { sentence: "Effortless small talk bridges hearts and creates warm connections.", meaning: "자연스러운 스몰토크는 마음을 잇고 따뜻한 연결을 만듭니다." },
+      { sentence: "Navigating casual interactions with wit brings vibrant joy.", meaning: "재치 있게 일상의 대화를 나누는 것은 활기찬 기쁨을 줍니다." },
+      { sentence: "True conversational fluency is listening with empathy and replying with warmth.", meaning: "진정한 회화 유창성은 공감하며 듣고 따뜻하게 화답하는 것입니다." },
+      { sentence: "I articulate everyday nuance with grace and confident ease.", meaning: "일상의 미세한 뉘앙스도 우아하고 자신감 있게 표현합니다." },
+      { sentence: "Meaningful everyday dialogues illuminate the beauty of ordinary life.", meaning: "의미 있는 일상의 대화는 평범한 삶의 아름다움을 밝혀줍니다." }
+    ]
+  },
+  business: {
+    seed: [
+      { sentence: "I am ready to learn and do my best at work.", meaning: "배울 준비가 되었고 직장에서 최선을 다합니다." },
+      { sentence: "Clear communication makes teamwork smooth and easy.", meaning: "명확한 소통이 팀워크를 매끄럽고 쉽게 만듭니다." },
+      { sentence: "Thank you for your quick and kind feedback.", meaning: "빠르고 친절한 피드백에 감사드립니다." },
+      { sentence: "Step by step, I become more professional.", meaning: "한 걸음씩, 나는 더 프로페셔널해집니다." },
+      { sentence: "I focus on finding constructive solutions today.", meaning: "오늘 나는 건설적인 해결책을 찾는 데 집중합니다." }
+    ],
+    grow: [
+      { sentence: "I present my ideas clearly and listen with respect.", meaning: "내 아이디어를 명확히 전달하고 존중하며 경청합니다." },
+      { sentence: "Collaborative teamwork always unlocks better results.", meaning: "협력적인 팀워크는 언제나 더 나은 결과를 이끌어냅니다." },
+      { sentence: "I navigate workplace challenges with composure and grit.", meaning: "침착함과 끈기로 직장의 도전 과제들을 지혜롭게 해결합니다." },
+      { sentence: "Clear priorities lead to productive and fulfilling days.", meaning: "명확한 우선순위가 생산적이고 보람찬 하루를 만듭니다." },
+      { sentence: "I value constructive feedback as fuel for professional growth.", meaning: "건설적인 피드백을 전문적 성장을 위한 밑거름으로 소중히 여깁니다." }
+    ],
+    bloom: [
+      { sentence: "Strategic clarity and empathetic leadership inspire collective excellence.", meaning: "전략적 명료함과 공감적 리더십이 탁월한 팀 시너지를 이끕니다." },
+      { sentence: "I articulate complex business concepts with precision and persuasion.", meaning: "복잡한 비즈니스 개념도 정확하고 설득력 있게 전달합니다." },
+      { sentence: "Negotiations succeed when mutual value guides the discussion.", meaning: "상호 가치가 대화를 이끌 때 협상은 성공적인 결실을 맺습니다." },
+      { sentence: "High-stakes challenges refine strategic thinking and resilience.", meaning: "중요한 도전 과제들은 전략적 사고와 회복탄력성을 한층 단련시킵니다." },
+      { sentence: "Visionary execution transforms innovative ideas into measurable impact.", meaning: "비전 있는 실행력이 혁신적인 아이디어를 실질적인 성과로 바꿉니다." }
+    ]
+  },
+  travel: {
+    seed: [
+      { sentence: "Excuse me, where is the departure gate, please?", meaning: "실례지만 탑승구가 어디에 있나요?" },
+      { sentence: "I am excited to explore new and wonderful places.", meaning: "새롭고 멋진 곳들을 탐험할 생각에 설렙니다." },
+      { sentence: "Could you take a quick photo for us, please?", meaning: "저희 사진 한 장만 찍어주실 수 있나요?" },
+      { sentence: "Travel opens my eyes to the beauty of the world.", meaning: "여행은 세상의 아름다움에 내 눈을 뜨게 합니다." },
+      { sentence: "I feel safe, curious, and happy on this journey.", meaning: "이번 여행길에서 안전하고 호기심 넘치며 행복합니다." }
+    ],
+    grow: [
+      { sentence: "Could you tell me the best way to get downtown?", meaning: "시내로 가는 가장 좋은 방법을 알려주시겠어요?" },
+      { sentence: "Embracing new cultures enriches my perspective on life.", meaning: "새로운 문화를 받아들이는 것은 삶의 시야를 풍요롭게 합니다." },
+      { sentence: "I travel with an open heart and adaptable mindset.", meaning: "열린 마음과 유연한 태도로 세상을 여행합니다." },
+      { sentence: "Every unexpected detour holds a delightful discovery.", meaning: "예상치 못한 여정의 경로마다 유쾌한 발견이 숨어 있습니다." },
+      { sentence: "Exploring foreign streets sparks wonder and lasting memories.", meaning: "낯선 거리를 걷는 것은 경이로움과 잊지 못할 추억을 선사합니다." }
+    ],
+    bloom: [
+      { sentence: "Immersion in unfamiliar cultures broadens horizons and dissolves prejudice.", meaning: "낯선 문화에의 몰입은 시야를 넓히고 편견을 허물어뜨립니다." },
+      { sentence: "I navigate international journeys with seamless linguistic poise.", meaning: "국제적인 여정 속에서도 유려한 언어적 품격으로 소통합니다." },
+      { sentence: "True wanderlust is discovering familiar human warmth in foreign lands.", meaning: "진정한 여행자의 마음은 이국의 땅에서 친근한 인간미를 발견하는 것입니다." },
+      { sentence: "Travel transforms the curious traveler into a global citizen.", meaning: "여행은 호기심 많은 여행자를 성숙한 세계 시민으로 탈바꿈시킵니다." },
+      { sentence: "Uncharted paths awaken authentic creativity and adventurous spirits.", meaning: "미지의 길은 진정한 창의성과 모험심을 일깨웁니다." }
+    ]
   }
 };
+
+function getRadioTopicCategory(topicStr) {
+  const t = (topicStr || '').toLowerCase();
+  if (/힐링|휴식|평온|위로|heal|calm|peace|rest|sleep|쉼|릴랙스/i.test(t)) return 'healing';
+  if (/비즈니스|직장|업무|회의|회사|면접|business|work|office|job|career|meeting/i.test(t)) return 'business';
+  if (/여행|공항|비행기|호텔|길찾기|입국|travel|trip|airport|flight|hotel|tour/i.test(t)) return 'travel';
+  if (/일상|생활|대화|카페|쇼핑|친구|식당|주문|daily|life|cafe|coffee|shop|restaurant/i.test(t)) return 'daily';
+  return 'growth';
+}
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
@@ -583,8 +663,8 @@ function initTopicControls() {
       localStorage.setItem('slofa_radio_topic', val);
       updateRadioThemeUI();
       if (radioEditor) radioEditor.style.display = 'none';
-      showToast(`📻 라디오 테마가 [${val}]으로 설정되었습니다! 새 플레이리스트를 편성합니다.`);
-      fetchRadioAffirmations(true);
+      showToast(`📻 라디오 테마가 [${val}]으로 설정되었습니다! 새 플레이리스트를 편성하여 재생합니다.`);
+      fetchRadioAffirmations(false, true);
     });
   }
 
@@ -1528,6 +1608,23 @@ async function loadDailyLesson(customSentenceHint = '', forceNextRandom = false)
   }
 
   // 2. Seamless Client Fallback (Zero Freezing)
+  if (customSentenceHint) {
+    const radioItem = (SlofaState.radioPlaylist || []).find(i => i.sentence === customSentenceHint);
+    const customLesson = {
+      target_sentence: customSentenceHint,
+      korean_meaning: (radioItem && radioItem.meaning) || "내가 집중하고 성장하기로 선택한 소중한 확언 문장입니다.",
+      coach_advice: `한국어 코치: 라디오 문장 '${customSentenceHint.split(' ').slice(0, 2).join(' ')}'의 첫 호흡을 편안하게 실어 3단계 속도(0.8x → 1.0x → 1.2x)로 입에 익혀보세요.`,
+      rhythm_tips: customSentenceHint.toUpperCase(),
+      pattern_expansions: [
+        `I focus on: ${customSentenceHint}`,
+        `Step by step, ${customSentenceHint}`,
+        `Every day, ${customSentenceHint}`
+      ]
+    };
+    renderLesson(customLesson);
+    return;
+  }
+
   const isHealing = /힐링|휴식|평온|위로|heal|calm|peace|rest/i.test(SlofaState.trainingTopic);
   const cat = isHealing ? 'healing' : 'growth';
   const list = CLIENT_TOPIC_LESSONS[cat][SlofaState.level] || CLIENT_TOPIC_LESSONS.growth.grow;
@@ -1601,6 +1698,7 @@ function initReviewFork() {
 // --- 8. Track 2: 24H Always-on Radio Logic with Speed Control & AI Refresh ---
 function initRadioPlayer() {
   initRadioSpeedControls();
+  initRadioRepeatControls();
   fetchRadioAffirmations();
 
   const masterBtn = document.getElementById('master-radio-play-btn');
@@ -1629,7 +1727,7 @@ function initRadioSpeedControls() {
   const speedBtns = document.querySelectorAll('.radio-speed-btn');
   speedBtns.forEach(btn => {
     const rate = parseFloat(btn.getAttribute('data-speed'));
-    if (rate === SlofaState.radioSpeed) btn.classList.add('active');
+    btn.classList.toggle('active', rate === SlofaState.radioSpeed);
 
     btn.addEventListener('click', () => {
       speedBtns.forEach(b => b.classList.remove('active'));
@@ -1638,14 +1736,39 @@ function initRadioSpeedControls() {
       localStorage.setItem('slofa_radio_speed', rate);
       showToast(`🎚️ 라디오 재생 속도가 [${rate}x]로 변경되었습니다.`);
       if (SlofaState.isRadioPlaying) {
+        if (SlofaState.radioTimer) {
+          clearTimeout(SlofaState.radioTimer);
+          SlofaState.radioTimer = null;
+        }
         playRadioSequence();
       }
     });
   });
 }
 
+function initRadioRepeatControls() {
+  const repeatBtns = document.querySelectorAll('.radio-repeat-btn');
+  repeatBtns.forEach(btn => {
+    const count = parseInt(btn.getAttribute('data-repeat') || '1');
+    btn.classList.toggle('active', count === SlofaState.radioRepeatCount);
+
+    btn.addEventListener('click', () => {
+      repeatBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      SlofaState.radioRepeatCount = count;
+      SlofaState.radioRepeatProgress = 0;
+      localStorage.setItem('slofa_radio_repeat', count);
+      if (count === 2) {
+        showToast('🔁 [2회 반복 모드] 각 문장을 두 번씩 들려드립니다. (1차 청취 → 2차 섀도잉)');
+      } else {
+        showToast('🔂 [1회 재생 모드] 각 문장을 한 번씩 연속해서 들려드립니다.');
+      }
+    });
+  });
+}
+
 // Fetch Affirmations by Theme & Level
-async function fetchRadioAffirmations(appendAI = false) {
+async function fetchRadioAffirmations(appendAI = false, autoPlay = false) {
   try {
     const res = await fetch('/api/slofa', {
       method: 'POST',
@@ -1667,10 +1790,26 @@ async function fetchRadioAffirmations(appendAI = false) {
           showToast('💡 [스마트 프리셋] 고품질 테마 확언이 플레이리스트에 추가되었습니다.');
         }
       } else {
+        // Complete replacement with 5 new sentences for the new theme
         SlofaState.radioPlaylist = [...SlofaState.reviewQueuedSentences, ...json.data];
+        SlofaState.radioIndex = 0;
+        SlofaState.radioRepeatProgress = 0;
+        if (json.source === 'ai') {
+          showToast(`✨ [Gemini AI] '${SlofaState.radioTopic}' 맞춤 확언 5문장이 새로 편성되었습니다!`);
+        } else {
+          showToast(`💡 [스마트 프리셋] '${SlofaState.radioTopic}' 확언 5문장이 편성되었습니다.`);
+        }
       }
       renderRadioPlaylistUI();
       updateRadioActiveTrack();
+
+      if (autoPlay) {
+        if (!SlofaState.isRadioPlaying) {
+          toggleRadioPlay();
+        } else {
+          playRadioSequence();
+        }
+      }
       return;
     }
   } catch (err) {
@@ -1679,17 +1818,28 @@ async function fetchRadioAffirmations(appendAI = false) {
   }
 
   // Client Fallback Preset
-  refreshRadioPlaylist();
+  refreshRadioPlaylist(autoPlay);
 }
 
-function refreshRadioPlaylist() {
-  const isHealing = /힐링|휴식|평온|위로|heal|calm|peace|rest/i.test(SlofaState.radioTopic);
-  const cat = isHealing ? 'healing' : 'growth';
-  const baseItems = CLIENT_TOPIC_RADIO[cat][SlofaState.level] || CLIENT_TOPIC_RADIO.growth.grow;
+function refreshRadioPlaylist(autoPlay = false) {
+  const cat = getRadioTopicCategory(SlofaState.radioTopic);
+  const baseItems = (CLIENT_TOPIC_RADIO[cat] && CLIENT_TOPIC_RADIO[cat][SlofaState.level]) 
+                 || CLIENT_TOPIC_RADIO.growth[SlofaState.level] 
+                 || CLIENT_TOPIC_RADIO.growth.grow;
 
   SlofaState.radioPlaylist = [...SlofaState.reviewQueuedSentences, ...baseItems];
+  SlofaState.radioIndex = 0;
+  SlofaState.radioRepeatProgress = 0;
   renderRadioPlaylistUI();
   updateRadioActiveTrack();
+
+  if (autoPlay) {
+    if (!SlofaState.isRadioPlaying) {
+      toggleRadioPlay();
+    } else {
+      playRadioSequence();
+    }
+  }
 }
 
 function renderRadioPlaylistUI() {
@@ -1702,15 +1852,14 @@ function renderRadioPlaylistUI() {
     div.className = `playlist-item ${idx === SlofaState.radioIndex ? 'active' : ''}`;
     div.innerHTML = `
       <div style="flex: 1;">
-        <div class="playlist-sentence">
+        <div class="playlist-sentence" style="font-size: 1.05rem; font-weight: 700;">
           ${item.isCustomReview ? '<span class="warmup-badge" style="margin-right: 0.4rem;">복습예약</span>' : ''}
           ${escapeHtml(item.sentence)}
         </div>
-        <div class="playlist-meaning">${escapeHtml(item.meaning)}</div>
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center;">
         <button class="btn btn-sm btn-secondary" onclick="playSingleRadioIndex(${idx})">▶️ 재생</button>
-        <button class="btn btn-sm btn-accent" title="트랙 1 훈련실로 가져가기" onclick="takeToStudio('${escapeSingleQuotes(item.sentence)}')">🔥 훈련실로</button>
+        <button class="btn btn-sm btn-accent" title="트랙 1 훈련실로 가져가기 (한국어 번역 & 코칭 오픈)" onclick="takeToStudio('${escapeSingleQuotes(item.sentence)}')">🔥 훈련실로</button>
       </div>
     `;
     container.appendChild(div);
@@ -1725,7 +1874,7 @@ function updateRadioActiveTrack() {
   const meaningEl = document.getElementById('radio-current-meaning');
 
   if (sentenceEl) sentenceEl.textContent = item.sentence;
-  if (meaningEl) meaningEl.textContent = item.meaning;
+  if (meaningEl) meaningEl.textContent = ''; // Keep Korean hidden in radio
 
   renderRadioPlaylistUI();
 }
@@ -1745,20 +1894,29 @@ function toggleRadioPlay() {
 
     if (masterBtn) masterBtn.textContent = '⏸️';
     if (wave) wave.classList.add('playing');
-    showToast(`📻 24H 귀 트이기 라디오가 [${SlofaState.radioSpeed}x] 속도로 무한 재생됩니다.`);
+    const repeatLabel = SlofaState.radioRepeatCount === 2 ? '2회 반복' : '1회';
+    showToast(`📻 24H 귀 트이기 라디오가 [${SlofaState.radioSpeed}x 속도 / ${repeatLabel}]로 무한 재생됩니다.`);
     playRadioSequence();
   } else {
     if (masterBtn) masterBtn.textContent = '▶️';
     if (wave) wave.classList.remove('playing');
     window.speechSynthesis.cancel();
-    if (SlofaState.radioTimer) clearTimeout(SlofaState.radioTimer);
+    if (SlofaState.radioTimer) {
+      clearTimeout(SlofaState.radioTimer);
+      SlofaState.radioTimer = null;
+    }
     showToast('라디오 재생이 일시정지되었습니다.');
   }
 }
 
-// 24H Infinite Loop Sequence with Custom Radio Speed
+// 24H Infinite Loop Sequence with Custom Radio Speed & Repeat Count (1x or 2x)
 function playRadioSequence() {
   if (!SlofaState.isRadioPlaying) return;
+
+  if (SlofaState.radioTimer) {
+    clearTimeout(SlofaState.radioTimer);
+    SlofaState.radioTimer = null;
+  }
 
   const item = SlofaState.radioPlaylist[SlofaState.radioIndex];
   if (!item) return;
@@ -1770,18 +1928,46 @@ function playRadioSequence() {
   utterance.lang = 'en-US';
   utterance.rate = SlofaState.radioSpeed; // User selected radio speed (0.8x / 1.0x / 1.2x)
 
+  // Assign native English voice if available for reliable rate scaling
+  if ('speechSynthesis' in window) {
+    const voices = window.speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('US')))
+                 || voices.find(v => v.lang.startsWith('en'));
+    if (enVoice) utterance.voice = enVoice;
+  }
+
   utterance.onend = () => {
     if (!SlofaState.isRadioPlaying) return;
-    SlofaState.radioTimer = setTimeout(() => {
-      if (!SlofaState.isRadioPlaying) return;
+
+    // Check if 2-repeat mode is active and this was the 1st reading
+    if (SlofaState.radioRepeatCount === 2 && SlofaState.radioRepeatProgress === 0) {
+      SlofaState.radioRepeatProgress = 1;
+      // 1.2s breathing gap before 2nd shadowing playback of the SAME sentence
+      SlofaState.radioTimer = setTimeout(() => {
+        if (!SlofaState.isRadioPlaying) return;
+        playRadioSequence();
+      }, 1200);
+    } else {
+      // Cycle complete for this sentence, advance to next
+      SlofaState.radioRepeatProgress = 0;
       SlofaState.radioIndex = (SlofaState.radioIndex + 1) % SlofaState.radioPlaylist.length;
-      playRadioSequence();
-    }, 2200);
+      // 2.0s resting gap before the next sentence
+      SlofaState.radioTimer = setTimeout(() => {
+        if (!SlofaState.isRadioPlaying) return;
+        playRadioSequence();
+      }, 2000);
+    }
   };
 
-  utterance.onerror = () => {
+  utterance.onerror = (e) => {
+    // If canceled (e.g. by speed button click, pause, or track change), do NOT advance or skip!
+    if (e && (e.error === 'interrupted' || e.error === 'canceled')) {
+      return;
+    }
     if (!SlofaState.isRadioPlaying) return;
+    SlofaState.radioRepeatProgress = 0;
     SlofaState.radioTimer = setTimeout(() => {
+      if (!SlofaState.isRadioPlaying) return;
       SlofaState.radioIndex = (SlofaState.radioIndex + 1) % SlofaState.radioPlaylist.length;
       playRadioSequence();
     }, 2000);
@@ -1791,6 +1977,11 @@ function playRadioSequence() {
 }
 
 function changeRadioTrack(delta) {
+  if (SlofaState.radioTimer) {
+    clearTimeout(SlofaState.radioTimer);
+    SlofaState.radioTimer = null;
+  }
+  SlofaState.radioRepeatProgress = 0;
   SlofaState.radioIndex = (SlofaState.radioIndex + delta + SlofaState.radioPlaylist.length) % SlofaState.radioPlaylist.length;
   updateRadioActiveTrack();
   if (SlofaState.isRadioPlaying) {
@@ -1799,6 +1990,11 @@ function changeRadioTrack(delta) {
 }
 
 window.playSingleRadioIndex = function(idx) {
+  if (SlofaState.radioTimer) {
+    clearTimeout(SlofaState.radioTimer);
+    SlofaState.radioTimer = null;
+  }
+  SlofaState.radioRepeatProgress = 0;
   SlofaState.radioIndex = idx;
   if (!SlofaState.isRadioPlaying) {
     toggleRadioPlay();

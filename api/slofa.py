@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import urllib.request
 import urllib.error
@@ -202,12 +203,101 @@ FALLBACK_RADIO_BY_TOPIC = {
             {"sentence": "I allow each moment to unfold with grace, patience, and acceptance.", "meaning": "우아함과 인내, 수용의 마음으로 매 순간이 자연스레 펼쳐지게 둡니다."},
             {"sentence": "Releasing attachment to outcomes liberates my authentic creative energy.", "meaning": "결과에 대한 집착을 내려놓음으로써 나의 진정한 창조적 에너지를 해방합니다."}
         ]
+    },
+    "daily": {
+        "seed": [
+            {"sentence": "Good morning, today is going to be a great day.", "meaning": "좋은 아침이에요, 오늘은 멋진 날이 될 거예요."},
+            {"sentence": "I enjoy simple moments and friendly smiles.", "meaning": "소소한 순간들과 다정한 미소를 즐깁니다."},
+            {"sentence": "Can I get a warm cup of coffee, please?", "meaning": "따뜻한 커피 한 잔 부탁드려도 될까요?"},
+            {"sentence": "It feels so refreshing to take a gentle walk.", "meaning": "가볍게 산책하니 기분이 참 상쾌해요."},
+            {"sentence": "Thank you for making my day brighter.", "meaning": "오늘 하루를 더 밝게 만들어주셔서 감사합니다."}
+        ],
+        "grow": [
+            {"sentence": "I can handle whatever today brings with a smile.", "meaning": "오늘 어떤 일이 찾아와도 미소로 맞이할 수 있습니다."},
+            {"sentence": "Could you recommend a quiet place around here?", "meaning": "이 근처에 조용하고 편안한 곳을 추천해 주시겠어요?"},
+            {"sentence": "Small polite words make everyday conversations pleasant.", "meaning": "정중한 한마디가 일상 대화를 기분 좋게 만듭니다."},
+            {"sentence": "I feel comfortable expressing my thoughts naturally.", "meaning": "내 생각을 자연스럽게 표현하는 것이 편안합니다."},
+            {"sentence": "Everyday conversations are wonderful chances to connect.", "meaning": "일상의 대화는 소통을 잇는 멋진 기회입니다."}
+        ],
+        "bloom": [
+            {"sentence": "Effortless small talk bridges hearts and creates warm connections.", "meaning": "자연스러운 스몰토크는 마음을 잇고 따뜻한 연결을 만듭니다."},
+            {"sentence": "Navigating casual interactions with wit brings vibrant joy.", "meaning": "재치 있게 일상의 대화를 나누는 것은 활기찬 기쁨을 줍니다."},
+            {"sentence": "True conversational fluency is listening with empathy and replying with warmth.", "meaning": "진정한 회화 유창성은 공감하며 듣고 따뜻하게 화답하는 것입니다."},
+            {"sentence": "I articulate everyday nuance with grace and confident ease.", "meaning": "일상의 미세한 뉘앙스도 우아하고 자신감 있게 표현합니다."},
+            {"sentence": "Meaningful everyday dialogues illuminate the beauty of ordinary life.", "meaning": "의미 있는 일상의 대화는 평범한 삶의 아름다움을 밝혀줍니다."}
+        ]
+    },
+    "business": {
+        "seed": [
+            {"sentence": "I am ready to learn and do my best at work.", "meaning": "배울 준비가 되었고 직장에서 최선을 다합니다."},
+            {"sentence": "Clear communication makes teamwork smooth and easy.", "meaning": "명확한 소통이 팀워크를 매끄럽고 쉽게 만듭니다."},
+            {"sentence": "Thank you for your quick and kind feedback.", "meaning": "빠르고 친절한 피드백에 감사드립니다."},
+            {"sentence": "Step by step, I become more professional.", "meaning": "한 걸음씩, 나는 더 프로페셔널해집니다."},
+            {"sentence": "I focus on finding constructive solutions today.", "meaning": "오늘 나는 건설적인 해결책을 찾는 데 집중합니다."}
+        ],
+        "grow": [
+            {"sentence": "I present my ideas clearly and listen with respect.", "meaning": "내 아이디어를 명확히 전달하고 존중하며 경청합니다."},
+            {"sentence": "Collaborative teamwork always unlocks better results.", "meaning": "협력적인 팀워크는 언제나 더 나은 결과를 이끌어냅니다."},
+            {"sentence": "I navigate workplace challenges with composure and grit.", "meaning": "침착함과 끈기로 직장의 도전 과제들을 지혜롭게 해결합니다."},
+            {"sentence": "Clear priorities lead to productive and fulfilling days.", "meaning": "명확한 우선순위가 생산적이고 보람찬 하루를 만듭니다."},
+            {"sentence": "I value constructive feedback as fuel for professional growth.", "meaning": "건설적인 피드백을 전문적 성장을 위한 밑거름으로 소중히 여깁니다."}
+        ],
+        "bloom": [
+            {"sentence": "Strategic clarity and empathetic leadership inspire collective excellence.", "meaning": "전략적 명료함과 공감적 리더십이 탁월한 팀 시너지를 이끕니다."},
+            {"sentence": "I articulate complex business concepts with precision and persuasion.", "meaning": "복잡한 비즈니스 개념도 정확하고 설득력 있게 전달합니다."},
+            {"sentence": "Negotiations succeed when mutual value guides the discussion.", "meaning": "상호 가치가 대화를 이끌 때 협상은 성공적인 결실을 맺습니다."},
+            {"sentence": "High-stakes challenges refine strategic thinking and resilience.", "meaning": "중요한 도전 과제들은 전략적 사고와 회복탄력성을 한층 단련시킵니다."},
+            {"sentence": "Visionary execution transforms innovative ideas into measurable impact.", "meaning": "비전 있는 실행력이 혁신적인 아이디어를 실질적인 성과로 바꿉니다."}
+        ]
+    },
+    "travel": {
+        "seed": [
+            {"sentence": "Excuse me, where is the departure gate, please?", "meaning": "실례지만 탑승구가 어디에 있나요?"},
+            {"sentence": "I am excited to explore new and wonderful places.", "meaning": "새롭고 멋진 곳들을 탐험할 생각에 설렙니다."},
+            {"sentence": "Could you take a quick photo for us, please?", "meaning": "저희 사진 한 장만 찍어주실 수 있나요?"},
+            {"sentence": "Travel opens my eyes to the beauty of the world.", "meaning": "여행은 세상의 아름다움에 내 눈을 뜨게 합니다."},
+            {"sentence": "I feel safe, curious, and happy on this journey.", "meaning": "이번 여행길에서 안전하고 호기심 넘치며 행복합니다."}
+        ],
+        "grow": [
+            {"sentence": "Could you tell me the best way to get downtown?", "meaning": "시내로 가는 가장 좋은 방법을 알려주시겠어요?"},
+            {"sentence": "Embracing new cultures enriches my perspective on life.", "meaning": "새로운 문화를 받아들이는 것은 삶의 시야를 풍요롭게 합니다."},
+            {"sentence": "I travel with an open heart and adaptable mindset.", "meaning": "열린 마음과 유연한 태도로 세상을 여행합니다."},
+            {"sentence": "Every unexpected detour holds a delightful discovery.", "meaning": "예상치 못한 여정의 경로마다 유쾌한 발견이 숨어 있습니다."},
+            {"sentence": "Exploring foreign streets sparks wonder and lasting memories.", "meaning": "낯선 거리를 걷는 것은 경이로움과 잊지 못할 추억을 선사합니다."}
+        ],
+        "bloom": [
+            {"sentence": "Immersion in unfamiliar cultures broadens horizons and dissolves prejudice.", "meaning": "낯선 문화에의 몰입은 시야를 넓히고 편견을 허물어뜨립니다."},
+            {"sentence": "I navigate international journeys with seamless linguistic poise.", "meaning": "국제적인 여정 속에서도 유려한 언어적 품격으로 소통합니다."},
+            {"sentence": "True wanderlust is discovering familiar human warmth in foreign lands.", "meaning": "진정한 여행자의 마음은 이국의 땅에서 친근한 인간미를 발견하는 것입니다."},
+            {"sentence": "Travel transforms the curious traveler into a global citizen.", "meaning": "여행은 호기심 많은 여행자를 성숙한 세계 시민으로 탈바꿈시킵니다."},
+            {"sentence": "Uncharted paths awaken authentic creativity and adventurous spirits.", "meaning": "미지의 길은 진정한 창의성과 모험심을 일깨웁니다."}
+        ]
     }
 }
 
+def get_topic_category(topic_str: str) -> str:
+    t = (topic_str or "").lower()
+    if any(w in t for w in ["힐링", "휴식", "평온", "위로", "heal", "calm", "peace", "rest", "sleep", "쉼", "릴랙스"]):
+        return "healing"
+    elif any(w in t for w in ["비즈니스", "직장", "업무", "회의", "회사", "면접", "business", "work", "office", "job", "career", "meeting"]):
+        return "business"
+    elif any(w in t for w in ["여행", "공항", "비행기", "호텔", "길찾기", "입국", "travel", "trip", "airport", "flight", "hotel", "tour"]):
+        return "travel"
+    elif any(w in t for w in ["일상", "생활", "대화", "카페", "쇼핑", "친구", "식당", "주문", "daily", "life", "cafe", "coffee", "shop", "restaurant"]):
+        return "daily"
+    else:
+        return "growth"
+
+def clean_json_markdown(text: str) -> str:
+    cleaned = (text or "").strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    return cleaned.strip()
+
 def call_gemini(api_key: str, system_prompt: str, user_prompt: str) -> dict:
-    # Primary model: gemini-3.5-flash-lite with seamless backup
-    models_to_try = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
+    # Official robust models with fallback
+    models_to_try = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]
     last_err = None
     for model_name in models_to_try:
         try:
@@ -223,7 +313,8 @@ def call_gemini(api_key: str, system_prompt: str, user_prompt: str) -> dict:
                 if not candidates:
                     raise ValueError(f"Empty candidate from {model_name}")
                 text = candidates[0]["content"]["parts"][0]["text"]
-                return json.loads(text)
+                cleaned_text = clean_json_markdown(text)
+                return json.loads(cleaned_text)
         except Exception as e:
             last_err = e
             continue
@@ -243,7 +334,9 @@ def call_openai(api_key: str, system_prompt: str, user_prompt: str) -> dict:
     })
     with urllib.request.urlopen(req, timeout=12) as response:
         res = json.loads(response.read().decode("utf-8"))
-        return json.loads(res["choices"][0]["message"]["content"])
+        raw_text = res["choices"][0]["message"]["content"]
+        cleaned_text = clean_json_markdown(raw_text)
+        return json.loads(cleaned_text)
 
 class handler(BaseHTTPRequestHandler):
     def _send_json(self, status: int, data: dict):
@@ -284,7 +377,7 @@ class handler(BaseHTTPRequestHandler):
             openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
 
             # Determine topic category for fallbacks
-            topic_category = "healing" if any(w in topic.lower() for w in ["힐링", "휴식", "평온", "위로", "heal", "calm", "peace", "rest", "sleep"]) else "growth"
+            topic_category = get_topic_category(topic)
 
             # If no API key, return curated fallback preset immediately
             if not gemini_key and not openai_key:
@@ -361,7 +454,7 @@ Return ONLY valid JSON:
             coach_lang = body.get("coach_lang", "ko")
             action = body.get("action", "daily_lesson")
             topic = body.get("topic", "성장과 자신감")
-            topic_category = "healing" if any(w in topic.lower() for w in ["힐링", "휴식", "평온", "위로", "heal", "calm", "peace"]) else "growth"
+            topic_category = get_topic_category(topic)
 
             if action == "radio_affirmations":
                 self._send_json(200, {

@@ -31,9 +31,10 @@
      - 어려운 문장은 클릭 한 번으로 **"내일 라디오로 보내기"** ➔ 다음 날 BGM으로 귀에 자동 복습!
 2. **[트랙 2] 24H 긍정 귀 트이기 라디오 (Always-on Radio)**:
    - 정규 진도나 테스트와 완전 무관한 **독립형 BGM 프로그램**.
-   - **리스닝 속도 조절**: `0.8x Slo`(힐링/슬로우) / `1.0x Natural`(표준) / `1.2x Fast`(순발력 뇌자극) 자유 선택.
-   - **하루 1문장 한계 없는 무제한 재생**: 관심 테마(힐링, 활력 모닝 등)의 확언들이 24시간 무한 연속 재생되며, `[✨ AI 새 확언 불러오기]`로 계속 확장.
-   - 흘려듣다 꽂히는 문장은 `[🔥 훈련실로 가져가기]` 버튼으로 즉시 3단 가속 정복.
+   - **리스닝 속도 제어**: `0.8x Slo`(힐링/슬로우) / `1.0x Natural`(표준) / `1.2x Fast`(순발력 뇌자극) 자유 선택 (재생 중 끊김 없는 즉시 전환).
+   - **문장 반복 제어**: `🔂 1회씩 듣기` vs `🔁 2회씩 반복`(1차: 소리/리듬 캐치 ➔ 2차: 섀도잉) 선택 모드.
+   - **영어 100% 청각 몰입**: 라디오에서는 한국어 번역을 노출하지 않고 귀를 완전히 열어두며, 문장을 `[🔥 훈련실로 가져가기]`로 넘겼을 때만 한국어 번역과 코칭 팁을 집중 학습.
+   - **하루 1문장 한계 없는 무제한 재생**: 원하는 어떤 테마든 직접 입력 가능하며, 5대 비상용 안전망(힐링, 성장, 일상, 비즈니스, 여행) 탑재.
 
 ---
 
@@ -41,7 +42,7 @@
 
 - **프론트엔드**: Vanilla HTML5, Vanilla CSS3 (Custom Variables, Flexbox/Grid), Vanilla JavaScript (ES6+, Web Speech API TTS/STT, LocalStorage, Word Diff Engine)
 - **백엔드 (Serverless)**: Python 3.9+ (Vercel Serverless Function `api/slofa.py`)
-- **AI API**: Google Gemini 3.5 Flash-Lite (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 100% 무중단 클라이언트/서버 스마트 프리셋(Smart Fallback) 탑재
+- **AI API**: Google Gemini 1.5/2.0 Flash (`GEMINI_API_KEY`) 또는 OpenAI GPT-4o-mini (`OPENAI_API_KEY`) + 100% 무중단 클라이언트/서버 스마트 프리셋(Smart Fallback) 탑재
 - **배포 플랫폼**: Vercel (GitHub 연동 자동 배포)
 
 ---
@@ -52,12 +53,13 @@
 A1-3/
 ├── index.html            # 메인 싱글 페이지 웹 앱 (듀얼 트랙 & 4개 뷰)
 ├── css/
-│   └── style.css         # Slofa 감성 테마, 단어 diff 뱃지, 속도 조절기 반응형 스타일
+│   └── style.css         # Slofa 감성 테마, 단어 diff 뱃지, 속도/반복 조절기 반응형 스타일
 ├── js/
-│   └── app.js           # 듀얼 트랙 제어, 단어별 음성 채점, 무자각 레벨 평가, 라디오 루프
+│   └── app.js           # 듀얼 트랙 제어, 3단 가속/반복 라디오 재생 엔진, 무자각 레벨 평가
 ├── api/
 │   ├── slofa.py          # [백엔드] Vercel Python AI Serverless Function (Adaptive Learning API)
 │   └── coach.py          # 호환성 브릿지 엔드포인트
+├── server.py             # 로컬 통합 개발 서버 (프론트 + 백엔드 API 동시 서빙)
 ├── vercel.json           # Vercel 서버리스 라우팅 설정
 ├── requirements.txt      # 파이썬 의존성 패키지 정의
 ├── PLAN.md               # [제출 필수] 서비스 기획서
@@ -70,13 +72,13 @@ A1-3/
 
 ## 🚀 4. 로컬 실행 방법
 
-별도의 빌드 도구 없이 브라우저에서 바로 열거나 파이썬 내장 간이 서버로 실행합니다:
+별도의 복잡한 세팅 없이 아래 명령어로 즉시 로컬 실행이 가능합니다:
 
 ```bash
-# Python 내장 웹 서버 실행 (포트 8000)
-python3 -m http.server 8000
+# 로컬 통합 서버 실행 (정적 파일 + Python API 동시 서빙)
+python3 server.py
 ```
-브라우저에서 `http://localhost:8000`으로 접속합니다. (프론트엔드 자체에 100% 무중단 스마트 Fallback 엔진이 탑재되어 로컬에서도 모든 기능이 완벽하게 동작합니다.)
+브라우저에서 `http://localhost:8000`으로 접속합니다. (프론트엔드 자체에 100% 무중단 스마트 Fallback 엔진이 탑재되어 오프라인 환경에서도 모든 기능이 완벽하게 동작합니다.)
 
 ---
 

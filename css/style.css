@@ -1140,13 +1140,22 @@ body {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
 }
 
-/* Radio Speed Selector */
-.radio-speed-selector {
+/* Radio Settings Grid (Speed & Repeat Count) */
+.radio-settings-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  width: 100%;
+}
+.radio-speed-selector,
+.radio-repeat-selector {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  margin-top: 1rem;
   flex-wrap: wrap;
 }
 .speed-pill-label {
@@ -1154,7 +1163,8 @@ body {
   font-weight: 700;
   color: var(--text-muted);
 }
-.radio-speed-btns {
+.radio-speed-btns,
+.radio-repeat-btns {
   display: flex;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -1162,7 +1172,8 @@ body {
   padding: 0.25rem;
   gap: 0.25rem;
 }
-.radio-speed-btn {
+.radio-speed-btn,
+.radio-repeat-btn {
   background: transparent;
   border: none;
   color: var(--text-secondary);
@@ -1173,8 +1184,17 @@ body {
   cursor: pointer;
   transition: var(--transition);
 }
+.radio-speed-btn:hover,
+.radio-repeat-btn:hover {
+  color: var(--text-primary);
+}
 .radio-speed-btn.active {
   background: var(--accent-orange);
+  color: #ffffff;
+  box-shadow: var(--shadow-sm);
+}
+.radio-repeat-btn.active {
+  background: var(--primary);
   color: #ffffff;
   box-shadow: var(--shadow-sm);
 }
